@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  createSafeBrowsingChecker,
+  createWebRiskChecker,
   isBlockedHost,
   isPrivateIp,
   isSameSite,
@@ -112,17 +112,38 @@ describe("resolveHost", () => {
   });
 });
 
-describe("safe browsing", () => {
-  it("is unknown without a key, and on failure", async () => {
-    expect(await createSafeBrowsingChecker(undefined).check("https://a.com")).toBe("unknown");
-    const failing = vi.fn(async () => new Response("", { status: 503 })) as typeof fetch;
-    expect(await createSafeBrowsingChecker("k", failing).check("https://a.com")).toBe("unknown");
+describe("web risk", () => {
+  it("is unchecked without a key, and makes no request", async () => {
+    const fetcher = vi.fn() as unknown as typeof fetch;
+    expect(await createWebRiskChecker(undefined, fetcher).check("https://a.com")).toBe("unchecked");
+    expect(fetcher).not.toHaveBeenCalled();
   });
 
-  it("maps matches to unsafe", async () => {
-    const hit = vi.fn(async () => Response.json({ matches: [{}] })) as typeof fetch;
+  it("is unknown when the lookup fails", async () => {
+    const failing = vi.fn(async () => new Response("", { status: 503 })) as typeof fetch;
+    expect(await createWebRiskChecker("k", failing).check("https://a.com")).toBe("unknown");
+    const down = vi.fn(async () => {
+      throw new TypeError("network");
+    }) as typeof fetch;
+    expect(await createWebRiskChecker("k", down).check("https://a.com")).toBe("unknown");
+  });
+
+  it("maps a threat to unsafe and an empty answer to safe", async () => {
+    const hit = vi.fn(async () =>
+      Response.json({ threat: { threatTypes: ["MALWARE"] } }),
+    ) as typeof fetch;
     const miss = vi.fn(async () => Response.json({})) as typeof fetch;
-    expect(await createSafeBrowsingChecker("k", hit).check("https://a.com")).toBe("unsafe");
-    expect(await createSafeBrowsingChecker("k", miss).check("https://a.com")).toBe("safe");
+    expect(await createWebRiskChecker("k", hit).check("https://a.com")).toBe("unsafe");
+    expect(await createWebRiskChecker("k", miss).check("https://a.com")).toBe("safe");
+  });
+
+  it("asks about every threat type and keeps the key out of the URL", async () => {
+    const fetcher = vi.fn(async () => Response.json({})) as unknown as typeof fetch;
+    await createWebRiskChecker("secret-key", fetcher).check("https://a.com/x");
+    const [url, init] = vi.mocked(fetcher).mock.calls[0] ?? [];
+    expect(String(url)).toContain("threatTypes=SOCIAL_ENGINEERING");
+    expect(String(url)).toContain("uri=https%3A%2F%2Fa.com%2Fx");
+    expect(String(url)).not.toContain("secret-key");
+    expect(new Headers(init?.headers).get("x-goog-api-key")).toBe("secret-key");
   });
 });

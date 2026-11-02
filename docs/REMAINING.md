@@ -20,5 +20,5 @@ Tracked here so they aren't lost: these are not deferred.
 - Pricing, Trust and the 4 Guides pages, which the site links to but which show a 404 today.
 - Privacy Policy and Terms.
 - A scheduled job that re-checks destinations, because nothing sets `blocked` automatically.
-- Web Risk or a Safe Browsing key: permanent codes can't be created in production without one.
+- A Web Risk key. Until it is set, destinations are not checked against threat lists.
 - Verified provider claims, with a source link and a real date for each.

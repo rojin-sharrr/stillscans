@@ -24,6 +24,7 @@ import type { AppEnv } from "../app";
 import type { Env } from "../env";
 import { ApiError, notFound } from "../lib/errors";
 import { randomId } from "../lib/ids";
+import { log } from "../lib/log";
 import { syncCodeToKv } from "../lib/sync";
 import { requireUser } from "../middleware/auth";
 
@@ -38,8 +39,12 @@ function presentCode(code: Code) {
   };
 }
 
-/** Validates a destination, failing closed: no code is issued for a URL we couldn't vet. */
-async function vetDestination(input: string, threats: ThreatChecker, env: Env): Promise<string> {
+/**
+ * Validates a destination. With a threat key set this fails closed: no code is issued
+ * for a URL we tried and couldn't vet. Without a key it still applies the URL rules,
+ * and logs each code so they can be re-checked once a key is added.
+ */
+async function vetDestination(input: string, threats: ThreatChecker): Promise<string> {
   const normalized = normalizeUrl(input);
   if (!normalized.ok) throw new ApiError(422, "invalid_destination", "Enter a valid web address.");
 
@@ -52,9 +57,10 @@ async function vetDestination(input: string, threats: ThreatChecker, env: Env): 
   if (threat === "unsafe") {
     throw new ApiError(422, "unsafe_destination", "This address is listed as unsafe.");
   }
-  if (threat === "unknown" && env.ENVIRONMENT !== "development") {
+  if (threat === "unknown") {
     throw new ApiError(503, "safety_check_unavailable", "Try again in a moment.");
   }
+  if (threat === "unchecked") log("warn", "destination_not_threat_checked", { hostname });
   return href;
 }
 
@@ -89,7 +95,7 @@ export function codeRoutes(threats: (env: Env) => ThreatChecker) {
     const db = c.get("db");
     const user = c.get("user");
     assertAllowance(await countLiveCodes(db, user.id), user.codeAllowance);
-    const destination = await vetDestination(parsed.data.destination, threats(c.env), c.env);
+    const destination = await vetDestination(parsed.data.destination, threats(c.env));
 
     for (let attempt = 0; attempt < MAX_SHORT_CODE_ATTEMPTS; attempt++) {
       const shortCode = generateShortCode();
@@ -141,9 +147,7 @@ export function codeRoutes(threats: (env: Env) => ThreatChecker) {
     if (code.status === "archived" && status === "active") {
       assertAllowance(await countLiveCodes(db, user.id), user.codeAllowance);
     }
-    const vetted = destination
-      ? await vetDestination(destination, threats(c.env), c.env)
-      : undefined;
+    const vetted = destination ? await vetDestination(destination, threats(c.env)) : undefined;
     const destinationChanged = vetted !== undefined && vetted !== code.destination;
 
     const updated = await updateCode(

@@ -20,16 +20,15 @@ in the `REPLACE_WITH_STAGING_*` values.
 
 Set on the Workers: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (api) and `SCAN_SALT` (redirect).
 
-Still needed on api: `SAFE_BROWSING_API_KEY`. Without it, creating a permanent code returns 503
-outside development, because no code is issued for a destination that couldn't be vetted.
+Recommended on api: `WEB_RISK_API_KEY`, from a Google Cloud project with the Web Risk API enabled.
 
 ```sh
-cd apps/api && pnpm exec wrangler secret put SAFE_BROWSING_API_KEY --env=""
+cd apps/api && pnpm exec wrangler secret put WEB_RISK_API_KEY --env=""
 ```
 
-**Check Google's terms for this key.** The Safe Browsing Lookup API is documented for non-commercial
-use, and Google directs commercial products to Web Risk. Switching means changing
-`packages/url-safety/src/safe-browsing.ts` only.
+Without it, codes are still created and the URL rules still apply, but destinations aren't checked
+against Google's threat lists; each is logged as `destination_not_threat_checked`. With it, a failed
+lookup blocks code creation rather than letting an unvetted link through.
 
 ## 3. Google OAuth
 
@@ -66,14 +65,23 @@ curl -s  https://api.usestillscans.com/health
 
 ## Continuous deployment
 
-`.github/workflows/ci.yml` tests every pull request. `deploy.yml` deploys `main`, and only the apps
-whose files changed. A change to a shared package deploys the apps that use it, and tests must pass
-first. `redirect` runs its own tests again immediately before it deploys.
+Every push to `main` deploys to production. `deploy.yml` runs lint, types and tests first, then
+deploys only the apps whose files changed, so a failed check stops the deploy. A change to a shared
+package deploys the apps that use it. `ci.yml` tests pull requests without deploying.
 
-Add these GitHub repository secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+Add these GitHub repository secrets under **Settings → Secrets and variables → Actions**:
 
-Migrations do not run automatically. Apply them by hand before merging code that needs them, and
-keep them backward compatible so the running Worker still works during the gap.
+| Secret                  | Value                                          |
+| ----------------------- | ---------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`  | A Cloudflare API token that can deploy Workers |
+| `CLOUDFLARE_ACCOUNT_ID` | `45b09943ce50f74d31175844d09cdc8f`             |
+| `DATABASE_URL_UNPOOLED` | The production value from `.env.prod`          |
+
+Production migrations run automatically before `api` deploys, so keep them backward compatible:
+the running Worker still uses the old schema until its deploy finishes.
+
+To redeploy without a code change, open **Actions → Deploy → Run workflow**. Only apps with changes
+in the latest commit are deployed.
 
 ## Before going public
 

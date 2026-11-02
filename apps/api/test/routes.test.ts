@@ -286,6 +286,19 @@ describe("codes", () => {
     expect(res.status).toBe(503);
   });
 
+  it("still creates codes when no threat key is set", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { app } = createTestApp({}, "unchecked");
+    const res = await call(app, env, "/api/codes", {
+      method: "POST",
+      token,
+      json: { destination: "https://a.com/" },
+    });
+    expect(res.status).toBe(201);
+    expect(warn.mock.calls[0]?.[0]).toContain("destination_not_threat_checked");
+    warn.mockRestore();
+  });
+
   it("enforces the free allowance of 3, freeing a slot on archive", async () => {
     const { app } = createTestApp();
     const codes = [];

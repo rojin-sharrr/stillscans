@@ -4,8 +4,8 @@ WEB_ORIGIN=http://localhost:4321
 API_ORIGIN=http://localhost:8788
 # Empty on purpose: overrides the production cookie domain in wrangler.toml.
 COOKIE_DOMAIN=
-# Optional locally: without a key, code creation skips the threat lookup in development only.
-# SAFE_BROWSING_API_KEY=
+# Optional: without a key, destinations are not checked against threat lists.
+# WEB_RISK_API_KEY=
 # Required for sign-in. The redirect URI is
 # http://localhost:8788/api/auth/google/callback
 # GOOGLE_CLIENT_ID=

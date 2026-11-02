@@ -11,7 +11,8 @@ export interface Env {
   API_ORIGIN: string;
   /** Shares the session cookie with the web app, e.g. .usestillscans.com. Unset locally. */
   COOKIE_DOMAIN?: string;
-  SAFE_BROWSING_API_KEY?: string;
+  /** Without it, destinations aren't checked against Google's threat lists. */
+  WEB_RISK_API_KEY?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
 }

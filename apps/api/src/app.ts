@@ -1,5 +1,5 @@
 import { createDb, type Db, type schema } from "@stillscans/db";
-import { createSafeBrowsingChecker, resolveHost, type ThreatChecker } from "@stillscans/url-safety";
+import { createWebRiskChecker, resolveHost, type ThreatChecker } from "@stillscans/url-safety";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
@@ -34,7 +34,7 @@ export interface AppDeps {
 
 const defaultDeps: AppDeps = {
   fetch: (...args) => fetch(...args),
-  threats: (env) => createSafeBrowsingChecker(env.SAFE_BROWSING_API_KEY),
+  threats: (env) => createWebRiskChecker(env.WEB_RISK_API_KEY),
 };
 
 export function createApp(deps: AppDeps = defaultDeps) {

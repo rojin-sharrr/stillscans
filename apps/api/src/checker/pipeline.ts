@@ -99,7 +99,8 @@ export async function runCheck(
   emit({ type: "step", step: "controls", state: "active", detail: null });
   const classification = classify(trace);
   const finalUrl = trace.hops.at(-1)?.url ?? start.href;
-  const threat = await deps.threats.check(finalUrl);
+  const verdict = await deps.threats.check(finalUrl);
+  const threat = verdict === "unchecked" ? "unknown" : verdict;
   const controller = classification.provider?.name ?? classification.controlledBy;
   emit({
     type: "step",
