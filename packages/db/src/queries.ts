@@ -345,6 +345,14 @@ export async function joinWaitlist(db: Db, entry: typeof schema.waitlist.$inferI
   await db.insert(schema.waitlist).values(entry).onConflictDoNothing();
 }
 
+export async function listWaitlistPlans(db: Db, email: string) {
+  const rows = await db
+    .select({ plan: schema.waitlist.plan })
+    .from(schema.waitlist)
+    .where(eq(schema.waitlist.email, email));
+  return rows.map((row) => row.plan);
+}
+
 export async function insertReport(
   db: Db,
   report: typeof schema.providerReports.$inferInsert,

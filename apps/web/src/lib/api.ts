@@ -102,6 +102,8 @@ export interface Account {
   liveCodes: number;
   plan: Plan;
   features: { analytics: boolean; branding: boolean };
+  /** Plans this account's email has joined the waitlist for. */
+  waitlist: string[];
 }
 export const fetchAccount = () => authed<Account>("/api/auth/me");
 

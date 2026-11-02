@@ -1,4 +1,4 @@
-import { countLiveCodes, upsertUser } from "@stillscans/db";
+import { countLiveCodes, listWaitlistPlans, upsertUser } from "@stillscans/db";
 import { PLANS } from "@stillscans/shared";
 import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
@@ -143,9 +143,20 @@ export function authRoutes(fetcher: typeof fetch) {
 
   routes.get("/me", requireUser, async (c) => {
     const { email, codeAllowance, id, plan } = c.get("user");
-    const liveCodes = await countLiveCodes(c.get("db"), id);
+    const db = c.get("db");
+    const [liveCodes, waitlist] = await Promise.all([
+      countLiveCodes(db, id),
+      listWaitlistPlans(db, email),
+    ]);
     const { analytics, branding } = PLANS[plan];
-    return c.json({ email, codeAllowance, liveCodes, plan, features: { analytics, branding } });
+    return c.json({
+      email,
+      codeAllowance,
+      liveCodes,
+      plan,
+      features: { analytics, branding },
+      waitlist,
+    });
   });
 
   routes.post("/logout", requireUser, async (c) => {

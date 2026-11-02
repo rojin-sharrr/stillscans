@@ -1,5 +1,24 @@
-import { useState } from "preact/hooks";
-import { joinWaitlist } from "../lib/api";
+import { useEffect, useState } from "preact/hooks";
+import { fetchAccount, joinWaitlist } from "../lib/api";
+import { isSignedIn } from "../lib/session-hint";
+
+const joinedKey = (plan: string) => `ss:waitlist:${plan}`;
+
+function rememberedJoin(plan: string): boolean {
+  try {
+    return localStorage.getItem(joinedKey(plan)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function rememberJoin(plan: string): void {
+  try {
+    localStorage.setItem(joinedKey(plan), "1");
+  } catch {
+    // Only affects whether the button shows as joined on the next visit.
+  }
+}
 
 type State = "idle" | "sending" | "sent" | "failed";
 
@@ -16,11 +35,26 @@ export function WaitlistForm({ plan, label, initialEmail = "", inline = false }:
   const [email, setEmail] = useState(initialEmail);
   const [state, setState] = useState<State>("idle");
 
+  // The browser remembers visitors. For signed-in people the account is the record.
+  useEffect(() => {
+    if (rememberedJoin(plan)) {
+      setState("sent");
+      return;
+    }
+    if (!isSignedIn()) return;
+    fetchAccount()
+      .then((account) => {
+        if (account.waitlist.includes(plan)) setState("sent");
+      })
+      .catch(() => {});
+  }, [plan]);
+
   const submit = async (event: Event) => {
     event.preventDefault();
     setState("sending");
     try {
       await joinWaitlist({ email: email.trim(), plan, source: window.location.pathname });
+      rememberJoin(plan);
       setState("sent");
     } catch {
       setState("failed");
@@ -29,9 +63,9 @@ export function WaitlistForm({ plan, label, initialEmail = "", inline = false }:
 
   if (state === "sent") {
     return (
-      <p class="small" role="status">
-        You're on the list. We'll email you when it launches.
-      </p>
+      <button type="button" class="btn btn-secondary waitlist-joined" disabled>
+        <span aria-hidden="true">✓</span> You're on the list
+      </button>
     );
   }
 

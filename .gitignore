@@ -13,3 +13,8 @@ dist/
 .DS_Store
 coverage/
 .neon
+
+# Local agent tooling, not part of the app
+.mcp.json
+.claude/
+skills-lock.json

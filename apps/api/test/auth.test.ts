@@ -6,7 +6,7 @@ let bindings: Awaited<ReturnType<typeof createTestBindings>>;
 let env: Env;
 const ORIGIN = { origin: "https://usestillscans.com" };
 
-const CLEAR = ["scans", "sessions", "code_destinations", "codes", "users"];
+const CLEAR = ["waitlist", "scans", "sessions", "code_destinations", "codes", "users"];
 
 beforeAll(async () => {
   bindings = await createTestBindings();
@@ -68,7 +68,19 @@ describe("sessions", () => {
       liveCodes: 0,
       plan: "free",
       features: { analytics: false, branding: false },
+      waitlist: [],
     });
+  });
+
+  it("reports which waitlists the account's email has joined", async () => {
+    const fixture = withToken(good);
+    const { cookie } = await signIn(fixture, env);
+    await call(fixture.app, env, "/api/waitlist", {
+      method: "POST",
+      json: { email: "G@Example.com", plan: "pro" },
+    });
+    const res = await call(fixture.app, env, "/api/auth/me", { headers: { cookie } });
+    expect(await res.json()).toMatchObject({ waitlist: ["pro"] });
   });
 
   it("blocks cookie writes from another site", async () => {

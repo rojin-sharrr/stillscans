@@ -2580,3 +2580,12 @@ ul {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+.waitlist-joined {
+  gap: 8px;
+  color: var(--green);
+}
+.btn-secondary.waitlist-joined:disabled {
+  opacity: 1;
+  background: #e8f5ef;
+  border-color: #cbe7da;
+}
