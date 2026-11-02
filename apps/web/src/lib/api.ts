@@ -1,4 +1,11 @@
-import type { CheckEvent, CheckRequest, CheckResult, CreateReportInput } from "@stillscans/shared";
+import type {
+  AnalyticsResponse,
+  CheckEvent,
+  CheckRequest,
+  CheckResult,
+  CreateReportInput,
+  QrDesign,
+} from "@stillscans/shared";
 
 const API_URL: string = import.meta.env.PUBLIC_API_URL ?? "https://api.usestillscans.com";
 
@@ -57,4 +64,84 @@ export async function sendReport(report: CreateReportInput): Promise<void> {
     body: JSON.stringify(report),
   });
   if (!response.ok) throw await errorFrom(response);
+}
+
+/** Calls an endpoint that uses the session cookie. */
+async function authed<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const response = await fetch(`${API_URL}${path}`, {
+    ...init,
+    credentials: "include",
+    headers: init.body ? { "content-type": "application/json" } : undefined,
+  });
+  if (!response.ok) throw await errorFrom(response);
+  return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
+}
+
+const post = <T>(path: string, body: unknown, method = "POST") =>
+  authed<T>(path, { method, body: JSON.stringify(body) });
+
+export const googleSignInUrl = `${API_URL}/api/auth/google`;
+
+export const fetchAuthConfig = () => authed<{ google: boolean }>("/api/auth/config");
+export const signOut = () => authed<void>("/api/auth/logout", { method: "POST" });
+
+export interface Account {
+  email: string;
+  codeAllowance: number;
+  liveCodes: number;
+}
+export const fetchAccount = () => authed<Account>("/api/auth/me");
+
+export interface Code {
+  id: string;
+  shortCode: string;
+  printedLink: string;
+  label: string | null;
+  destination: string;
+  design: QrDesign | null;
+  status: "active" | "paused" | "blocked" | "archived";
+  createdAt: number;
+  updatedAt: number;
+  scans?: number;
+}
+
+export interface NewCode {
+  destination: string;
+  label?: string;
+  design: QrDesign;
+}
+
+export interface CodeChanges {
+  destination?: string;
+  label?: string | null;
+  status?: "active" | "paused";
+  design?: QrDesign;
+}
+
+export const fetchCodes = () => authed<{ codes: Code[] }>("/api/codes");
+export const fetchCode = (id: string) =>
+  authed<{ code: Code; destinations: { destination: string; createdAt: number }[] }>(
+    `/api/codes/${encodeURIComponent(id)}`,
+  );
+export const createCode = (code: NewCode) => post<{ code: Code }>("/api/codes", code);
+export const updateCode = (id: string, changes: CodeChanges) =>
+  post<{ code: Code }>(`/api/codes/${encodeURIComponent(id)}`, changes, "PATCH");
+export const archiveCode = (id: string) =>
+  authed<void>(`/api/codes/${encodeURIComponent(id)}`, { method: "DELETE" });
+export const fetchExport = () => authed<unknown>("/api/codes/export");
+
+export interface AnalyticsFilters {
+  days: number;
+  device?: string;
+  country?: string;
+  codeId?: string;
+}
+
+export function fetchAnalytics(filters: AnalyticsFilters): Promise<AnalyticsResponse> {
+  const params = new URLSearchParams({ days: String(filters.days) });
+  for (const key of ["device", "country", "codeId"] as const) {
+    const value = filters[key];
+    if (value) params.set(key, value);
+  }
+  return authed<AnalyticsResponse>(`/api/analytics?${params}`);
 }

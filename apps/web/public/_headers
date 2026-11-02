@@ -1,5 +1,9 @@
 /check/*
   X-Robots-Tag: noindex
+/dashboard*
+  X-Robots-Tag: noindex
+/sign-in*
+  X-Robots-Tag: noindex
 /report*
   X-Robots-Tag: noindex
 /*

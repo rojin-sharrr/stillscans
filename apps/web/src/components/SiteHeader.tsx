@@ -1,4 +1,5 @@
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
+import { isSignedIn } from "../lib/session-hint";
 import { Logo } from "./Logo";
 
 const LINKS = [
@@ -11,6 +12,11 @@ const LINKS = [
 /** `onDirectory` adds the Providers link, which the design shows on directory pages. */
 export function SiteHeader({ onDirectory = false }: { onDirectory?: boolean }) {
   const [open, setOpen] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => setSignedIn(isSignedIn()), []);
+  const account = signedIn
+    ? { label: "Dashboard", href: "/dashboard" }
+    : { label: "Sign in", href: "/sign-in" };
   const links = LINKS.filter((link) => !link.directoryOnly || onDirectory);
 
   return (
@@ -50,8 +56,8 @@ export function SiteHeader({ onDirectory = false }: { onDirectory?: boolean }) {
               {link.label}
             </a>
           ))}
-          <a href="/sign-in" class="site-nav__signin">
-            Sign in
+          <a href={account.href} class="site-nav__signin">
+            {account.label}
           </a>
         </nav>
       </div>
@@ -62,7 +68,7 @@ export function SiteHeader({ onDirectory = false }: { onDirectory?: boolean }) {
               {link.label}
             </a>
           ))}
-          <a href="/sign-in">Sign in</a>
+          <a href={account.href}>{account.label}</a>
         </nav>
       )}
     </header>

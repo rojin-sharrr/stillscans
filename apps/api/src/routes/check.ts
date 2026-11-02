@@ -1,5 +1,4 @@
 import {
-  createDb,
   type Db,
   findCheck,
   findRecentCheck,
@@ -47,7 +46,7 @@ export function checkRoutes(deps: (env: AppEnv["Bindings"]) => CheckDeps) {
     const parsed = checkRequestSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) throw new ApiError(400, "invalid_request", "Send a url or decodedText.");
 
-    const db = createDb(c.env.DB);
+    const db = c.get("db");
     const id = randomId();
     const now = Date.now();
     const inputHash = await sha256Hex(JSON.stringify(parsed.data));
@@ -76,6 +75,8 @@ export function checkRoutes(deps: (env: AppEnv["Bindings"]) => CheckDeps) {
     }
 
     // Streamed so the checking screen shows real progress rather than a timer.
+    c.set("streaming", true);
+    const closeDb = c.get("closeDb");
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
@@ -98,6 +99,7 @@ export function checkRoutes(deps: (env: AppEnv["Bindings"]) => CheckDeps) {
           }
         } finally {
           controller.close();
+          await closeDb().catch(() => {});
         }
       },
     });
@@ -107,7 +109,7 @@ export function checkRoutes(deps: (env: AppEnv["Bindings"]) => CheckDeps) {
   });
 
   routes.get("/:id", async (c) => {
-    const row = await findCheck(createDb(c.env.DB), c.req.param("id"));
+    const row = await findCheck(c.get("db"), c.req.param("id"));
     if (!row) throw notFound("This result has expired or doesn't exist.");
     c.header("cache-control", "private, no-store");
     c.header("x-robots-tag", "noindex");

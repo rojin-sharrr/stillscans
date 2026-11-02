@@ -13,11 +13,11 @@ const SYNC_BATCH_SIZE = 200;
 
 /** Runs on a schedule. Each task is independent, so one failure can't block the others. */
 export async function runMaintenance(env: Env, now = Date.now()): Promise<void> {
-  const db = createDb(env.DB);
+  const { db, close } = createDb(env.HYPERDRIVE.connectionString);
   const results = await Promise.allSettled([
     (async () => {
       const pending = await listUnsyncedCodes(db, SYNC_BATCH_SIZE);
-      const synced = await Promise.all(pending.map((code) => syncCodeToKv(env, code)));
+      const synced = await Promise.all(pending.map((code) => syncCodeToKv(env, db, code)));
       const failed = synced.filter((ok) => !ok).length;
       if (pending.length > 0) log("info", "kv_resync", { pending: pending.length, failed });
     })(),
@@ -30,4 +30,5 @@ export async function runMaintenance(env: Env, now = Date.now()): Promise<void> 
       log("error", "maintenance_task_failed", { error: String(result.reason) });
     }
   }
+  await close().catch(() => {});
 }

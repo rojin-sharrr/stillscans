@@ -1,0 +1,10 @@
+---
+import { Dashboard } from "../../components/Dashboard";
+import { SiteHeader } from "../../components/SiteHeader";
+import Base from "../../layouts/Base.astro";
+---
+
+<Base title="Your codes · StillScans" noindex>
+  <SiteHeader client:load />
+  <Dashboard client:only="preact" />
+</Base>

@@ -14,7 +14,7 @@ enabled = true
 # Same namespace as api. Replace the ids after `wrangler kv namespace create` (see docs/DEPLOY.md).
 [[kv_namespaces]]
 binding = "KV"
-id = "REPLACE_WITH_PRODUCTION_KV_ID"
+id = "977aed734504486998a3607ef01906d6"
 
 [[queues.producers]]
 binding = "SCANS"

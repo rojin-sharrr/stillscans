@@ -1,4 +1,6 @@
 User-agent: *
 Disallow: /check/
 Disallow: /report
+Disallow: /dashboard
+Disallow: /sign-in
 Sitemap: https://usestillscans.com/sitemap.xml

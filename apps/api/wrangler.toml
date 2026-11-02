@@ -8,6 +8,8 @@ routes = [{ pattern = "api.usestillscans.com", custom_domain = true }]
 [vars]
 ENVIRONMENT = "production"
 WEB_ORIGIN = "https://usestillscans.com"
+API_ORIGIN = "https://api.usestillscans.com"
+COOKIE_DOMAIN = ".usestillscans.com"
 
 [observability]
 enabled = true
@@ -17,20 +19,17 @@ enabled = true
 crons = ["*/5 * * * *"]
 
 # Replace the ids after creating the resources (see docs/DEPLOY.md).
-[[d1_databases]]
-binding = "DB"
-database_name = "stillscans"
-database_id = "REPLACE_WITH_PRODUCTION_D1_ID"
-migrations_dir = "../../packages/db/migrations"
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "70a08af8c6844c128d2839948ddd5e22"
 
 # Same namespace as redirect.
 [[kv_namespaces]]
 binding = "KV"
-id = "REPLACE_WITH_PRODUCTION_KV_ID"
+id = "977aed734504486998a3607ef01906d6"
 
 [[queues.consumers]]
 queue = "stillscans-scans"
-# 10 rows at 6 columns stays under D1's limit of 100 bound parameters per query.
 max_batch_size = 10
 max_batch_timeout = 30
 max_retries = 5
@@ -54,15 +53,15 @@ workers_dev = true
 [env.staging.vars]
 ENVIRONMENT = "staging"
 WEB_ORIGIN = "https://staging.usestillscans.com"
+API_ORIGIN = "REPLACE_WITH_STAGING_API_ORIGIN"
+COOKIE_DOMAIN = ".usestillscans.com"
 
 [env.staging.triggers]
 crons = ["*/5 * * * *"]
 
-[[env.staging.d1_databases]]
-binding = "DB"
-database_name = "stillscans-staging"
-database_id = "REPLACE_WITH_STAGING_D1_ID"
-migrations_dir = "../../packages/db/migrations"
+[[env.staging.hyperdrive]]
+binding = "HYPERDRIVE"
+id = "REPLACE_WITH_STAGING_HYPERDRIVE_ID"
 
 [[env.staging.kv_namespaces]]
 binding = "KV"
@@ -84,3 +83,4 @@ simple = { limit = 30, period = 60 }
 name = "REPORT_LIMITER"
 namespace_id = "2002"
 simple = { limit = 5, period = 60 }
+

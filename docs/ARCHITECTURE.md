@@ -4,8 +4,8 @@
 
 1. **`redirect` must never break.** It is small, reads only KV, holds no secrets and is deployed
    alone. A bad dashboard or billing deploy cannot take down a printed code.
-2. **D1 is the source of truth. KV is a copy** that exists so redirects stay fast and keep working
-   if D1 has problems.
+2. **Postgres (Neon) is the source of truth. KV is a copy** that exists so redirects stay fast and
+   keep working if the database has problems.
 3. **Payment state never reaches KV.** "If you stop paying, your codes keep working" is enforced by
    structure: `redirect` cannot know whether someone paid.
 4. **A short code is never reissued.** Archived rows stay, so a printed code can't later open a
@@ -18,13 +18,13 @@
 
 ```
            creates/edits                    copies shortCode → destination
- web ───────────────────────▶ api ──▶ D1 ─────────────────────────────▶ KV
+ web ───────────────────────▶ api ──▶ Neon ───────────────────────────▶ KV
                                ▲                                         │
                                │ queue consumer writes scans             │ reads only
                                └──────────── Queue ◀── scan event ── redirect ◀── phone camera
 ```
 
-- **Writing a code:** `api` commits to D1, then writes KV. If KV fails the request still succeeds:
+- **Writing a code:** `api` commits to Postgres, then writes KV. If KV fails the request still succeeds:
   `synced_version` stays behind `version`, and cron retries within 5 minutes.
 - **Reading a code:** `redirect` reads KV, returns the 302, and sends the scan to the queue from
   `ctx.waitUntil`, so logging can't slow or fail a redirect. KV is eventually consistent: an edit
@@ -68,12 +68,44 @@ The checker fetches untrusted URLs. Defence is in `packages/url-safety`:
 - Names are resolved over DNS-over-HTTPS (two resolvers) and refused if any address is private. If
   both resolvers fail the fetch still proceeds, because Workers have no route to private networks.
 
+## Sign-in
+
+Google is the only sign-in method. Sessions are 30-day HttpOnly cookies shared across
+`.usestillscans.com`, stored only as hashes. Accounts are keyed by verified email.
+
+- Google uses state and PKCE, and checks audience, issuer, expiry and that the email is verified.
+- The callback URL comes from `API_ORIGIN`, because it must match the Google console exactly.
+- Cookie-authenticated writes must carry our exact `Origin`, which stops cross-site requests.
+
+## Analytics
+
+A scan can't identify a person, and we don't try. `redirect` records time, place from Cloudflare
+(country, region, city), device type and operating system. It hashes
+`salt | date | code | IP | user agent` into `visitor_hash`, which estimates distinct visitors. The IP
+is never stored or sent, and the date in the hash stops anyone linking a person across days or codes.
+Someone returning on another day counts again, which the dashboard says. Bots and prefetches are
+redirected but not counted.
+
+`GET /api/analytics` scopes every figure through `codes.user_id` and takes `days`, `device`, `country`
+and `codeId`, so the dashboard and the code page share one query. To compare placements, a person
+makes one code per placement.
+
+Queries aggregate raw `scans` rows. That suits launch; at high volume, add a daily rollup table.
+
+## QR codes
+
+`web/src/lib/qr-render.ts` is a pure function from link and design to SVG. Before any download,
+`QrPreview` rasterises that exact artwork and decodes it with ZXing, and the result is tied to the
+artwork it tested. A code is only downloadable once it has scanned back to the expected link.
+
+Static codes never touch the backend. A permanent code's design is stored with it but never reaches
+KV, so changing a design can't affect a printed code.
+
 ## Privacy
 
 Results sit behind unguessable ids, are `noindex`, and are deleted after 30 days. QR images are
 decoded in the browser and never uploaded. Repeat checks within 5 minutes reuse the stored result
-under a new id, so people never share a result link. Scans store country, city and device type, not
-IP addresses.
+under a new id, so people never share a result link. Scans store place and device, never IP addresses.
 
 ## Operating it
 
@@ -86,24 +118,23 @@ IP addresses.
 
 ## Decisions
 
-| Decision                                                       | Why                                                                           |
-| -------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Cloudflare with D1 and KV, not the handoff's Next and Postgres | The agreed architecture                                                       |
-| Astro with Preact islands                                      | Static pages are crawlable and fast on phones, with no server to fail         |
-| Provider data as reviewed JSON, not DB tables with an admin UI | One dataset for pages and matching; every change gets a review and a test run |
-| Queue into D1 for scans                                        | Dashboard analytics are plain SQL, and `redirect` still never touches D1      |
-| Streaming over POST, not SSE plus polling                      | One request, no step state to store, and it ends with the client              |
-| QR decoding in the browser only                                | Privacy, and no WASM in the Worker                                            |
+| Decision                                                       | Why                                                                                                         |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Cloudflare Workers and KV with Neon Postgres                   | Workers keep redirects independent; Neon replaced D1 at the owner's request                                 |
+| `node-postgres` through Hyperdrive, with Drizzle               | Neon's guidance for Cloudflare. Real transactions, and Hyperdrive pools connections for per-request Workers |
+| Tests on PGlite                                                | Real Postgres in memory, so tests need no network or container                                              |
+| Astro with Preact islands                                      | Static pages are crawlable and fast on phones, with no server to fail                                       |
+| Provider data as reviewed JSON, not DB tables with an admin UI | One dataset for pages and matching; every change gets a review and a test run                               |
+| Queue into Postgres for scans                                  | Dashboard analytics are plain SQL, and `redirect` still never touches the database                          |
+| Streaming over POST, not SSE plus polling                      | One request, no step state to store, and it ends with the client                                            |
+| QR decoding in the browser only                                | Privacy, and no WASM in the Worker                                                                          |
 
 ## Not built yet
 
 Each of these has no design yet, or needs a decision.
 
-| Area                                                                                | State                                                                                               |
-| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Sign-in                                                                             | `middleware/auth.ts` validates sessions, but nothing issues them. Needs an auth decision            |
-| Stripe                                                                              | Not started. Paying should only raise `users.code_allowance`                                        |
-| Create code, Pricing, Dashboard, Analytics, Guides, Comparison, Trust, Auth screens | No design. These links show the 404 page for now. The API for create, edit, stats and export exists |
-| Server-side QR decoding                                                             | Skipped. An image ZXing can't read shows "Couldn't read", with paste as the fallback                |
-| Re-scanning destinations                                                            | Nothing sets `blocked` automatically. `redirect` honours it; a scheduled job is needed              |
-| Dark mode, OG images                                                                | Not designed                                                                                        |
+| Area                     | State                                                                                  |
+| ------------------------ | -------------------------------------------------------------------------------------- |
+| Server-side QR decoding  | Skipped. An image ZXing can't read shows "Couldn't read", with paste as the fallback   |
+| Re-scanning destinations | Nothing sets `blocked` automatically. `redirect` honours it; a scheduled job is needed |
+| Dark mode, OG images     | Not designed                                                                           |

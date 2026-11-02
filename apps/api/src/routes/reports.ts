@@ -1,5 +1,5 @@
 import { getProvider } from "@stillscans/providers";
-import { createDb, insertReport } from "@stillscans/db";
+import { insertReport } from "@stillscans/db";
 import { createReportSchema } from "@stillscans/shared";
 import { Hono } from "hono";
 import type { AppEnv } from "../app";
@@ -19,7 +19,7 @@ reportRoutes.post("/", rateLimit("REPORT_LIMITER"), async (c) => {
     throw new ApiError(422, "unknown_provider", "That provider isn't in the directory.");
   }
 
-  await insertReport(createDb(c.env.DB), {
+  await insertReport(c.get("db"), {
     id: randomId(),
     providerSlug: providerSlug ?? null,
     domain: domain ?? null,

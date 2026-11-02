@@ -1,0 +1,12 @@
+---
+import { SignIn } from "../../components/SignIn";
+import { SiteHeader } from "../../components/SiteHeader";
+import Base from "../../layouts/Base.astro";
+---
+
+<Base title="Sign in · StillScans" noindex>
+  <SiteHeader client:load />
+  <main class="auth-page">
+    <SignIn client:only="preact" />
+  </main>
+</Base>

@@ -1,0 +1,11 @@
+name = "stillscans-dev-gateway"
+main = "index.js"
+compatibility_date = "2026-10-01"
+
+[[services]]
+binding = "API"
+service = "stillscans-api"
+
+[[services]]
+binding = "REDIRECT"
+service = "stillscans-redirect"

@@ -1,0 +1,19 @@
+---
+import { CreateCode } from "../components/CreateCode";
+import SiteFooter from "../components/SiteFooter.astro";
+import { SiteHeader } from "../components/SiteHeader";
+import Base from "../layouts/Base.astro";
+---
+
+<Base
+  title="Create a permanent QR code · StillScans"
+  description="Make a QR code that keeps working, even if you stop paying. Free static codes and 3 free permanent codes. No card, no trial."
+>
+  <SiteHeader client:load />
+  <main class="wrap create">
+    <h1 class="h1">Create a QR code</h1>
+    <p class="lead" style="margin-top:12px;max-width:620px">No trial and no card. Your code keeps working, whether or not you ever pay us.</p>
+    <CreateCode client:only="preact" />
+  </main>
+  <SiteFooter />
+</Base>

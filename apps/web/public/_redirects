@@ -1,1 +1,2 @@
 /check/:id /check/ 200
+/dashboard/codes/:id /dashboard/code/ 200

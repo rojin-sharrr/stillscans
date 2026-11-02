@@ -1,8 +1,10 @@
+import type { Db } from "@stillscans/db";
 import type { CheckEvent, CheckResult, KvCodeRecord, ScanEvent } from "@stillscans/shared";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Env } from "../src/env";
 import { runMaintenance } from "../src/jobs/maintenance";
 import { consumeScans } from "../src/jobs/scans";
+import { testDb } from "./test-db";
 import { call, createTestApp, createTestBindings, createTestEnv, seedUser } from "./helpers";
 
 const TIMEOUT_MS = 30_000;
@@ -29,7 +31,10 @@ beforeAll(async () => {
   bindings = await createTestBindings();
 }, TIMEOUT_MS);
 
-afterAll(() => bindings.mf.dispose());
+afterAll(async () => {
+  await bindings.mf.dispose();
+  await bindings.client.close();
+});
 
 beforeEach(async () => {
   await bindings.DB.batch(CLEAR.map((table) => bindings.DB.prepare(`DELETE FROM ${table}`)));
@@ -217,6 +222,49 @@ describe("codes", () => {
     expect(await res.json()).toMatchObject({ error: { code } });
   });
 
+  it("stores a design with the code without changing the redirect", async () => {
+    const { app } = createTestApp();
+    const design = {
+      foreground: "#123456",
+      background: "#FFFFFF",
+      modules: "dots",
+      frame: "label",
+      callToAction: "Scan for menu",
+      logo: null,
+    };
+    const res = await call(app, env, "/api/codes", {
+      method: "POST",
+      token,
+      json: { destination: "https://a.com/", design },
+    });
+    const { code } = (await res.json()) as { code: { id: string; shortCode: string } };
+    expect(await readKv(code.shortCode)).toEqual({ d: "https://a.com/", s: "active" });
+    const detail = (await (await call(app, env, `/api/codes/${code.id}`, { token })).json()) as {
+      code: { design: unknown };
+    };
+    expect(detail.code.design).toEqual(design);
+  });
+
+  it("rejects a logo that isn't a PNG", async () => {
+    const { app } = createTestApp();
+    const res = await call(app, env, "/api/codes", {
+      method: "POST",
+      token,
+      json: {
+        destination: "https://a.com/",
+        design: {
+          foreground: "#000000",
+          background: "#FFFFFF",
+          modules: "square",
+          frame: "none",
+          callToAction: "",
+          logo: "data:image/svg+xml;base64,PHN2Zz4=",
+        },
+      },
+    });
+    expect(res.status).toBe(400);
+  });
+
   it("rejects unsafe destinations", async () => {
     const { app } = createTestApp({}, "unsafe");
     const res = await call(app, env, "/api/codes", {
@@ -372,8 +420,11 @@ describe("background jobs", () => {
     shortCode,
     scannedAt: Date.now(),
     country: "US",
+    region: "Texas",
     city: "Austin",
     deviceType: "mobile",
+    os: "ios",
+    visitorHash: `visitor-${id}`,
   });
   const batch = (events: ScanEvent[]) =>
     ({ messages: events.map((body) => ({ body })) }) as unknown as MessageBatch<ScanEvent>;
@@ -381,7 +432,7 @@ describe("background jobs", () => {
   it("stores scans, ignoring redelivered messages", async () => {
     await consumeScans(batch([scan("a"), scan("b")]), env);
     await consumeScans(batch([scan("a")]), env);
-    const row = await bindings.DB.prepare("SELECT count(*) AS n FROM scans").first();
+    const row = await bindings.DB.prepare("SELECT count(*)::int AS n FROM scans").first();
     expect(row).toMatchObject({ n: 2 });
   });
 
@@ -395,25 +446,6 @@ describe("background jobs", () => {
     await runMaintenance(env, now);
     const { results } = await bindings.DB.prepare("SELECT id FROM checks").all();
     expect(results).toEqual([{ id: "new" }]);
-  });
-
-  it("reports scan stats to the code's owner", async () => {
-    const { app } = createTestApp();
-    const res = await call(app, env, "/api/codes", {
-      method: "POST",
-      token,
-      json: { destination: "https://a.com/" },
-    });
-    const { code } = (await res.json()) as { code: { id: string; shortCode: string } };
-    await consumeScans(batch([scan("a", code.shortCode), scan("b", code.shortCode)]), env);
-    const stats = (await (
-      await call(app, env, `/api/codes/${code.id}/stats`, { token })
-    ).json()) as {
-      byDevice: unknown[];
-      byCity: unknown[];
-    };
-    expect(stats.byDevice).toEqual([{ deviceType: "mobile", count: 2 }]);
-    expect(stats.byCity).toEqual([{ city: "Austin", country: "US", count: 2 }]);
   });
 });
 
@@ -432,14 +464,14 @@ describe("http surface", () => {
 
   it("hides internal errors but keeps a request id for tracing", async () => {
     const { app } = createTestApp();
-    const broken = createTestEnv(bindings, {
-      DB: {
-        prepare: () => {
-          throw new Error("secret detail");
-        },
-      } as unknown as D1Database,
-    });
-    const res = await call(app, broken, "/api/check/x", { headers: { "cf-ray": "ray-1" } });
+    const working = testDb.current;
+    testDb.current = {
+      select: () => {
+        throw new Error("secret detail");
+      },
+    } as unknown as Db;
+    const res = await call(app, env, "/api/check/x", { headers: { "cf-ray": "ray-1" } });
+    testDb.current = working;
     expect(res.status).toBe(500);
     const body = await res.text();
     expect(body).not.toContain("secret detail");

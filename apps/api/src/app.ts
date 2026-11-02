@@ -1,4 +1,4 @@
-import type { schema } from "@stillscans/db";
+import { createDb, type Db, type schema } from "@stillscans/db";
 import { createSafeBrowsingChecker, resolveHost, type ThreatChecker } from "@stillscans/url-safety";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -8,13 +8,22 @@ import type { Env } from "./env";
 import { ApiError } from "./lib/errors";
 import { randomId } from "./lib/ids";
 import { errorFields, log } from "./lib/log";
+import { analyticsRoutes } from "./routes/analytics";
+import { authRoutes } from "./routes/auth";
 import { checkRoutes } from "./routes/check";
 import { codeRoutes } from "./routes/codes";
 import { reportRoutes } from "./routes/reports";
 
 export interface AppEnv {
   Bindings: Env;
-  Variables: { user: typeof schema.users.$inferSelect; requestId: string };
+  Variables: {
+    user: typeof schema.users.$inferSelect;
+    requestId: string;
+    db: Db;
+    closeDb: () => Promise<void>;
+    /** Set by a streaming response, which outlives the handler and closes the pool itself. */
+    streaming: boolean;
+  };
 }
 
 /** External calls, injectable so tests never touch the network. */
@@ -51,11 +60,22 @@ export function createApp(deps: AppDeps = defaultDeps) {
       allowHeaders: ["authorization", "content-type"],
       allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
       exposeHeaders: ["x-request-id"],
+      credentials: true,
       maxAge: 86400,
     }),
   );
 
+  app.use("/api/*", async (c, next) => {
+    const { db, close } = createDb(c.env.HYPERDRIVE.connectionString);
+    c.set("db", db);
+    c.set("closeDb", close);
+    await next();
+    if (!c.get("streaming")) c.executionCtx.waitUntil(close().catch(() => {}));
+  });
+
   app.get("/health", (c) => c.json({ ok: true }));
+  app.route("/api/auth", authRoutes(deps.fetch));
+  app.route("/api/analytics", analyticsRoutes);
   app.route("/api/check", checkRoutes(checkDeps));
   app.route("/api/codes", codeRoutes(deps.threats));
   app.route("/api/reports", reportRoutes);

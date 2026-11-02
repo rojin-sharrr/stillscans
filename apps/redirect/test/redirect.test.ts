@@ -46,12 +46,50 @@ describe("redirect", () => {
   it("logs one scan, without personal data", async () => {
     const request = get("/x7k2", { headers: { "user-agent": "Mozilla/5.0 (iPhone)" } });
     await handle(request, fixture.env, ctx);
-    expect(fixture.send).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(fixture.send).toHaveBeenCalledOnce());
     const event = fixture.send.mock.calls[0]?.[0];
-    expect(event).toMatchObject({ shortCode: "x7k2", deviceType: "mobile" });
+    expect(event).toMatchObject({ shortCode: "x7k2", deviceType: "mobile", os: "ios" });
     expect(Object.keys(event ?? {}).sort()).toEqual(
-      ["city", "country", "deviceType", "id", "scannedAt", "shortCode"].sort(),
+      [
+        "city",
+        "country",
+        "deviceType",
+        "id",
+        "os",
+        "region",
+        "scannedAt",
+        "shortCode",
+        "visitorHash",
+      ].sort(),
     );
+  });
+
+  it("hashes visitors without ever sending the IP", async () => {
+    const env = { ...fixture.env, SCAN_SALT: "secret" };
+    const headers = { "user-agent": "Mozilla/5.0 (iPhone)", "cf-connecting-ip": "203.0.113.9" };
+    await handle(get("/x7k2", { headers }), env, ctx);
+    await handle(get("/x7k2", { headers }), env, ctx);
+    await vi.waitFor(() => expect(fixture.send).toHaveBeenCalledTimes(2));
+    const [first, second] = fixture.send.mock.calls.map(([event]) => event);
+    expect(first?.visitorHash).toMatch(/^[0-9a-f]{24}$/);
+    expect(first?.visitorHash).toBe(second?.visitorHash);
+    expect(JSON.stringify(first)).not.toContain("203.0.113.9");
+  });
+
+  it("leaves the visitor hash empty without a salt", async () => {
+    await handle(get("/x7k2"), fixture.env, ctx);
+    await vi.waitFor(() => expect(fixture.send).toHaveBeenCalledOnce());
+    expect(fixture.send.mock.calls[0]?.[0].visitorHash).toBeNull();
+  });
+
+  it.each([
+    ["user-agent", "Googlebot/2.1"],
+    ["user-agent", "facebookexternalhit/1.1"],
+    ["sec-purpose", "prefetch"],
+  ])("redirects but does not count %s: %s", async (header, value) => {
+    const res = await handle(get("/x7k2", { headers: { [header]: value } }), fixture.env, ctx);
+    expect(res.status).toBe(302);
+    expect(fixture.send).not.toHaveBeenCalled();
   });
 
   it("still redirects when scan logging fails", async () => {

@@ -34,6 +34,14 @@ function pixels({ canvas, context }: ReturnType<typeof drawScaled>): ImageData {
   return context.getImageData(0, 0, canvas.width, canvas.height);
 }
 
+/** Reads a rendered canvas. Used to prove a designed code still scans. */
+export async function decodeCanvas(canvas: HTMLCanvasElement): Promise<string | null> {
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return null;
+  const read = await loadReader();
+  return read(context.getImageData(0, 0, canvas.width, canvas.height));
+}
+
 export interface DecodedImage {
   text: string | null;
   thumbnail: string | null;

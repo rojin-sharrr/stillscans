@@ -1,0 +1,12 @@
+---
+import { SignInVerify } from "../../components/SignInVerify";
+import { SiteHeader } from "../../components/SiteHeader";
+import Base from "../../layouts/Base.astro";
+---
+
+<Base title="Signing in · StillScans" noindex>
+  <SiteHeader client:load />
+  <main class="narrow">
+    <SignInVerify client:only="preact" />
+  </main>
+</Base>

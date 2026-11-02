@@ -24,6 +24,13 @@ export interface ScanEvent {
   shortCode: string;
   scannedAt: number;
   country: string | null;
+  region: string | null;
   city: string | null;
   deviceType: "mobile" | "desktop" | "unknown";
+  os: "ios" | "android" | "windows" | "mac" | "other";
+  /**
+   * One-way daily hash for estimating distinct visitors. Keyed by a secret, the date
+   * and the code, so it can't identify a person or link them across days or codes.
+   */
+  visitorHash: string | null;
 }

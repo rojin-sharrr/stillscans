@@ -1,0 +1,10 @@
+---
+import { CodeDetail } from "../../../components/CodeDetail";
+import { SiteHeader } from "../../../components/SiteHeader";
+import Base from "../../../layouts/Base.astro";
+---
+
+<Base title="Your code · StillScans" noindex>
+  <SiteHeader client:load />
+  <CodeDetail client:only="preact" />
+</Base>

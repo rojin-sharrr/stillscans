@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import type { ThreatVerdict } from "@stillscans/url-safety";
 import { Miniflare } from "miniflare";
 import { vi } from "vitest";
@@ -7,6 +5,7 @@ import { type AppDeps, createApp } from "../src/app";
 import type { CheckDeps } from "../src/checker/pipeline";
 import type { Env } from "../src/env";
 import { sha256Hex } from "../src/lib/ids";
+import { sqlHelper, startTestDatabase } from "./test-db";
 
 export type Routes = Record<string, Response>;
 
@@ -37,28 +36,16 @@ export function testCheckDeps(routes: Routes, world: FakeWorld = {}): CheckDeps 
   };
 }
 
-const MIGRATIONS_DIR = join(import.meta.dirname, "../../../packages/db/migrations");
-
-/** Real D1 and KV running in workerd, with the real migrations applied. */
+/** Real KV running in workerd, and real Postgres in memory with the real migrations. */
 export async function createTestBindings() {
   const mf = new Miniflare({
     modules: true,
     script: "export default { fetch() { return new Response('ok') } }",
-    d1Databases: ["DB"],
     kvNamespaces: ["KV"],
   });
-  const DB = await mf.getD1Database("DB");
   const KV = await mf.getKVNamespace("KV");
-
-  for (const file of readdirSync(MIGRATIONS_DIR)
-    .filter((name: string) => name.endsWith(".sql"))
-    .sort()) {
-    const sql = readFileSync(join(MIGRATIONS_DIR, file), "utf8");
-    for (const statement of sql.split("--> statement-breakpoint")) {
-      await DB.prepare(statement).run();
-    }
-  }
-  return { mf, DB, KV };
+  const { client } = await startTestDatabase();
+  return { mf, client, KV, DB: sqlHelper(client) };
 }
 
 export function createTestEnv(
@@ -67,7 +54,7 @@ export function createTestEnv(
 ) {
   const { KV } = bindings;
   return {
-    DB: bindings.DB,
+    HYPERDRIVE: { connectionString: "postgres://test" },
     // Miniflare's binding is a proxy that spies can't intercept, so wrap it to inject failures.
     KV: {
       get: (...args: Parameters<KVNamespace["get"]>) => KV.get(...args),
@@ -77,6 +64,7 @@ export function createTestEnv(
     REPORT_LIMITER: { limit: vi.fn(async () => ({ success: true })) },
     ENVIRONMENT: "production",
     WEB_ORIGIN: "https://usestillscans.com",
+    API_ORIGIN: "https://api.usestillscans.com",
     ...overrides,
   } as unknown as Env;
 }
@@ -90,7 +78,10 @@ export function createTestApp(routes: Routes = {}, threat: ThreatVerdict = "safe
     return stubFetch(routes)(input, init);
   }) as unknown as typeof fetch;
 
-  const deps: AppDeps = { fetch: fetcher, threats: () => ({ check: async () => threat }) };
+  const deps: AppDeps = {
+    fetch: fetcher,
+    threats: () => ({ check: async () => threat }),
+  };
   return { app: createApp(deps), fetcher: vi.mocked(fetcher) };
 }
 
@@ -117,7 +108,7 @@ export function call(
   return app.fetch(request, env, ctx);
 }
 
-export async function seedUser(db: D1Database, id: string, allowance = 3) {
+export async function seedUser(db: ReturnType<typeof sqlHelper>, id: string, allowance = 3) {
   const now = Date.now();
   const token = `token-${id}`;
   await db.batch([

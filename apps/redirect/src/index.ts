@@ -11,14 +11,47 @@ export interface Env {
   KV: KVNamespace;
   SCANS: Queue<ScanEvent>;
   HOME_URL: string;
+  /** Optional: without it scans still count, but distinct visitors can't be estimated. */
+  SCAN_SALT?: string;
 }
 
 /** Edge-cache KV reads; api's writes reach every location within about a minute. */
 const KV_CACHE_TTL_SECONDS = 60;
 
+/** Not people: counting these would inflate a realtor's numbers. */
+const BOT = /bot|crawl|spider|slurp|preview|facebookexternalhit|curl|wget|python|headless/i;
+
 function deviceType(userAgent: string | null): ScanEvent["deviceType"] {
   if (!userAgent) return "unknown";
   return /mobile|android|iphone|ipad/i.test(userAgent) ? "mobile" : "desktop";
+}
+
+function operatingSystem(userAgent: string | null): ScanEvent["os"] {
+  if (!userAgent) return "other";
+  if (/iphone|ipad|ipod/i.test(userAgent)) return "ios";
+  if (/android/i.test(userAgent)) return "android";
+  if (/windows/i.test(userAgent)) return "windows";
+  return /mac os/i.test(userAgent) ? "mac" : "other";
+}
+
+function isHumanScan(request: Request): boolean {
+  const userAgent = request.headers.get("user-agent");
+  if (userAgent && BOT.test(userAgent)) return false;
+  const purpose = request.headers.get("sec-purpose") ?? request.headers.get("purpose");
+  return !purpose?.includes("prefetch");
+}
+
+/** See ScanEvent.visitorHash. The IP goes into the hash and is never stored or sent. */
+async function visitorHash(request: Request, shortCode: string, env: Env, now: number) {
+  if (!env.SCAN_SALT) return null;
+  const day = new Date(now).toISOString().slice(0, 10);
+  const ip = request.headers.get("cf-connecting-ip") ?? "";
+  const userAgent = request.headers.get("user-agent") ?? "";
+  const input = new TextEncoder().encode(`${env.SCAN_SALT}|${day}|${shortCode}|${ip}|${userAgent}`);
+  const digest = await crypto.subtle.digest("SHA-256", input);
+  return Array.from(new Uint8Array(digest).slice(0, 12), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
 }
 
 function isSafeDestination(destination: string): boolean {
@@ -30,18 +63,26 @@ function isSafeDestination(destination: string): boolean {
   }
 }
 
-function logScan(request: Request, shortCode: string, env: Env, ctx: ExecutionContext): void {
-  const { country, city } = (request.cf ?? {}) as { country?: string; city?: string };
-  const event: ScanEvent = {
+async function sendScan(request: Request, shortCode: string, env: Env): Promise<void> {
+  const { country, region, city } = (request.cf ?? {}) as Record<string, string | undefined>;
+  const userAgent = request.headers.get("user-agent");
+  const scannedAt = Date.now();
+  await env.SCANS.send({
     id: crypto.randomUUID(),
     shortCode,
-    scannedAt: Date.now(),
+    scannedAt,
     country: country ?? null,
+    region: region ?? null,
     city: city ?? null,
-    deviceType: deviceType(request.headers.get("user-agent")),
-  };
+    deviceType: deviceType(userAgent),
+    os: operatingSystem(userAgent),
+    visitorHash: await visitorHash(request, shortCode, env, scannedAt),
+  });
+}
+
+function logScan(request: Request, shortCode: string, env: Env, ctx: ExecutionContext): void {
   ctx.waitUntil(
-    env.SCANS.send(event).catch((error: unknown) => {
+    sendScan(request, shortCode, env).catch((error: unknown) => {
       console.error(JSON.stringify({ event: "scan_log_failed", shortCode, error: String(error) }));
     }),
   );
@@ -84,7 +125,7 @@ export async function handle(request: Request, env: Env, ctx: ExecutionContext) 
     return render("unknown", 404, env);
   }
 
-  if (request.method === "GET") logScan(request, shortCode, env, ctx);
+  if (request.method === "GET" && isHumanScan(request)) logScan(request, shortCode, env, ctx);
   return new Response(null, {
     status: 302,
     headers: { location: record.d, "cache-control": "no-store", "referrer-policy": "no-referrer" },

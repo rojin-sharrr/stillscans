@@ -1,20 +1,19 @@
 import {
   type Code,
   countLiveCodes,
-  createDb,
   findUserCode,
   insertCode,
   isUniqueViolation,
   listAllCodes,
   listCodes,
   listDestinations,
-  scanStats,
   updateCode,
 } from "@stillscans/db";
 import {
   createCodeSchema,
   generateShortCode,
   isReservedShortCode,
+  type QrDesign,
   REDIRECT_HOST,
   updateCodeSchema,
   WEB_HOST,
@@ -29,11 +28,14 @@ import { syncCodeToKv } from "../lib/sync";
 import { requireUser } from "../middleware/auth";
 
 const MAX_SHORT_CODE_ATTEMPTS = 5;
-const STATS_WINDOW_MS = 90 * 24 * 60 * 60 * 1000;
 
 function presentCode(code: Code) {
-  const { version: _v, syncedVersion: _s, userId: _u, ...fields } = code;
-  return { ...fields, printedLink: `${REDIRECT_HOST}/${code.shortCode}` };
+  const { version: _v, syncedVersion: _s, userId: _u, design, ...fields } = code;
+  return {
+    ...fields,
+    design: design ? (JSON.parse(design) as QrDesign) : null,
+    printedLink: `${REDIRECT_HOST}/${code.shortCode}`,
+  };
 }
 
 /** Validates a destination, failing closed: no code is issued for a URL we couldn't vet. */
@@ -67,13 +69,15 @@ export function codeRoutes(threats: (env: Env) => ThreatChecker) {
   routes.use("*", requireUser);
 
   routes.get("/", async (c) => {
-    const rows = await listCodes(createDb(c.env.DB), c.get("user").id);
-    return c.json({ codes: rows.map(presentCode) });
+    const rows = await listCodes(c.get("db"), c.get("user").id);
+    return c.json({
+      codes: rows.map((row) => ({ ...presentCode(row), scans: row.scans })),
+    });
   });
 
   /** "Export anytime": every code and where it points, archived included. */
   routes.get("/export", async (c) => {
-    const rows = await listAllCodes(createDb(c.env.DB), c.get("user").id);
+    const rows = await listAllCodes(c.get("db"), c.get("user").id);
     c.header("content-disposition", 'attachment; filename="stillscans-codes.json"');
     return c.json({ exportedAt: new Date().toISOString(), codes: rows.map(presentCode) });
   });
@@ -82,7 +86,7 @@ export function codeRoutes(threats: (env: Env) => ThreatChecker) {
     const parsed = createCodeSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) throw new ApiError(400, "invalid_request", "Enter a destination.");
 
-    const db = createDb(c.env.DB);
+    const db = c.get("db");
     const user = c.get("user");
     assertAllowance(await countLiveCodes(db, user.id), user.codeAllowance);
     const destination = await vetDestination(parsed.data.destination, threats(c.env), c.env);
@@ -98,9 +102,10 @@ export function codeRoutes(threats: (env: Env) => ThreatChecker) {
           userId: user.id,
           destination,
           label: parsed.data.label ?? null,
+          design: parsed.data.design ? JSON.stringify(parsed.data.design) : null,
           now: Date.now(),
         });
-        await syncCodeToKv(c.env, code);
+        await syncCodeToKv(c.env, db, code);
         return c.json({ code: presentCode(code) }, 201);
       } catch (error) {
         if (!isUniqueViolation(error)) throw error;
@@ -110,7 +115,7 @@ export function codeRoutes(threats: (env: Env) => ThreatChecker) {
   });
 
   routes.get("/:id", async (c) => {
-    const db = createDb(c.env.DB);
+    const db = c.get("db");
     const code = await findUserCode(db, c.get("user").id, c.req.param("id"));
     if (!code) throw notFound();
     const history = await listDestinations(db, code.id);
@@ -120,18 +125,11 @@ export function codeRoutes(threats: (env: Env) => ThreatChecker) {
     });
   });
 
-  routes.get("/:id/stats", async (c) => {
-    const db = createDb(c.env.DB);
-    const code = await findUserCode(db, c.get("user").id, c.req.param("id"));
-    if (!code) throw notFound();
-    return c.json(await scanStats(db, code.shortCode, Date.now() - STATS_WINDOW_MS));
-  });
-
   routes.patch("/:id", async (c) => {
     const parsed = updateCodeSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) throw new ApiError(400, "invalid_request", "Nothing to update.");
 
-    const db = createDb(c.env.DB);
+    const db = c.get("db");
     const user = c.get("user");
     const code = await findUserCode(db, user.id, c.req.param("id"));
     if (!code) throw notFound();
@@ -139,7 +137,7 @@ export function codeRoutes(threats: (env: Env) => ThreatChecker) {
       throw new ApiError(409, "code_blocked", "This code was stopped for safety.");
     }
 
-    const { destination, label, status } = parsed.data;
+    const { destination, label, status, design } = parsed.data;
     if (code.status === "archived" && status === "active") {
       assertAllowance(await countLiveCodes(db, user.id), user.codeAllowance);
     }
@@ -155,11 +153,12 @@ export function codeRoutes(threats: (env: Env) => ThreatChecker) {
         ...(destinationChanged ? { destination: vetted } : {}),
         ...(label !== undefined ? { label } : {}),
         ...(status !== undefined ? { status } : {}),
+        ...(design !== undefined ? { design: JSON.stringify(design) } : {}),
       },
       Date.now(),
       destinationChanged ? randomId() : null,
     );
-    if (updated.version !== updated.syncedVersion) await syncCodeToKv(c.env, updated);
+    if (updated.version !== updated.syncedVersion) await syncCodeToKv(c.env, db, updated);
     return c.json({ code: presentCode(updated) });
   });
 
@@ -168,7 +167,7 @@ export function codeRoutes(threats: (env: Env) => ThreatChecker) {
    * to someone else, while the printed link shows a paused page.
    */
   routes.delete("/:id", async (c) => {
-    const db = createDb(c.env.DB);
+    const db = c.get("db");
     const code = await findUserCode(db, c.get("user").id, c.req.param("id"));
     if (!code) throw notFound();
     if (code.status === "blocked") {
@@ -177,6 +176,7 @@ export function codeRoutes(threats: (env: Env) => ThreatChecker) {
     if (code.status !== "archived") {
       await syncCodeToKv(
         c.env,
+        db,
         await updateCode(db, code, { status: "archived" }, Date.now(), null),
       );
     }
