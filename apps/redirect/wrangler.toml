@@ -1,0 +1,37 @@
+name = "stillscans-redirect"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+routes = [{ pattern = "stillscans.net", custom_domain = true }]
+
+[vars]
+HOME_URL = "https://usestillscans.com/"
+
+[observability]
+enabled = true
+
+# Same namespace as api. Replace the ids after `wrangler kv namespace create` (see docs/DEPLOY.md).
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_PRODUCTION_KV_ID"
+
+[[queues.producers]]
+binding = "SCANS"
+queue = "stillscans-scans"
+
+[env.staging]
+name = "stillscans-redirect-staging"
+routes = []
+workers_dev = true
+
+[env.staging.vars]
+HOME_URL = "https://staging.usestillscans.com/"
+
+[[env.staging.kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_STAGING_KV_ID"
+
+[[env.staging.queues.producers]]
+binding = "SCANS"
+queue = "stillscans-scans-staging"

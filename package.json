@@ -1,0 +1,29 @@
+{
+  "name": "stillscans",
+  "private": true,
+  "packageManager": "pnpm@10.12.4",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev:redirect": "pnpm --filter @stillscans/redirect dev",
+    "dev:api": "pnpm --filter @stillscans/api dev",
+    "dev:web": "pnpm --filter @stillscans/web dev",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "build": "turbo run build",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "setup:local": "./scripts/setup-local.sh"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.4",
+    "@cloudflare/workers-types": "^5.20261102.1",
+    "@types/node": "^26.6.6",
+    "miniflare": "^4.20260730.0",
+    "turbo": "^2.11.10",
+    "typescript": "^6.0.3",
+    "vitest": "^5.1.0",
+    "wrangler": "^4.156.2"
+  }
+}

@@ -1,0 +1,17 @@
+---
+import { SiteHeader } from "../components/SiteHeader";
+import SiteFooter from "../components/SiteFooter.astro";
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Page not found · StillScans" noindex>
+  <SiteHeader client:load />
+  <main class="narrow">
+    <div class="card card-pad">
+      <h1 class="h2">We can't find this page</h1>
+      <p class="muted pretty" style="margin-top:8px">It may have moved, or it may not be ready yet.</p>
+      <a href="/" class="link-strong">Check a QR code</a>
+    </div>
+  </main>
+  <SiteFooter />
+</Base>

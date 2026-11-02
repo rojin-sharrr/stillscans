@@ -1,0 +1,10 @@
+---
+import { CheckResults } from "../../components/CheckResults";
+import { SiteHeader } from "../../components/SiteHeader";
+import Base from "../../layouts/Base.astro";
+---
+
+<Base title="Your QR code result · StillScans" noindex>
+  <SiteHeader client:load />
+  <CheckResults client:only="preact" />
+</Base>

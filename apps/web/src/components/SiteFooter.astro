@@ -1,0 +1,40 @@
+---
+import { Logo } from "./Logo";
+
+const guides = [
+  ["Do QR codes expire?", "/guides/do-qr-codes-expire"],
+  ["Static vs dynamic QR codes", "/guides/static-vs-dynamic-qr-codes"],
+  ["Why a QR code stopped working", "/guides/why-qr-code-stopped-working"],
+  ["QR code not scanning", "/guides/qr-code-not-scanning"],
+];
+const product = [
+  ["Check a QR code", "/"],
+  ["QR code providers", "/providers"],
+  ["Permanent QR code generator", "/permanent-qr-code-generator"],
+  ["Pricing", "/pricing"],
+  ["Trust", "/trust"],
+];
+---
+
+<footer class="site-footer">
+  <div class="wrap site-footer__inner">
+    <div class="site-footer__grid">
+      <div>
+        <div class="site-footer__brand"><Logo size={24} />StillScans</div>
+        <p class="small muted" style="margin-top:12px">QR codes that keep working.</p>
+      </div>
+      <nav aria-label="Guides">
+        <div class="site-footer__title">Guides</div>
+        {guides.map(([label, href]) => <a href={href}>{label}</a>)}
+      </nav>
+      <nav aria-label="Product">
+        <div class="site-footer__title">Product</div>
+        {product.map(([label, href]) => <a href={href}>{label}</a>)}
+      </nav>
+    </div>
+    <div class="site-footer__base">
+      <span>© 2026 StillScans</span>
+      <span class="mono">usestillscans.com</span>
+    </div>
+  </div>
+</footer>

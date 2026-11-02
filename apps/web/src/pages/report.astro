@@ -1,0 +1,18 @@
+---
+import { ReportForm } from "../components/ReportForm";
+import { SiteHeader } from "../components/SiteHeader";
+import SiteFooter from "../components/SiteFooter.astro";
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Report an update · StillScans" noindex>
+  <SiteHeader client:load onDirectory />
+  <main class="narrow">
+    <div class="card card-pad">
+      <h1 class="h2">Report an update</h1>
+      <p class="muted pretty" style="margin-top:8px">Tell us what's out of date or which provider we're missing. A link to the provider's own page helps. Providers can reply too.</p>
+      <ReportForm client:only="preact" />
+    </div>
+  </main>
+  <SiteFooter />
+</Base>

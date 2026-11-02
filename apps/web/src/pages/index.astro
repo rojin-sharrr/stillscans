@@ -1,0 +1,163 @@
+---
+import { Checker } from "../components/Checker";
+import { Faq } from "../components/Faq";
+import { SiteHeader } from "../components/SiteHeader";
+import SiteFooter from "../components/SiteFooter.astro";
+import Base from "../layouts/Base.astro";
+import { faqJsonLd } from "../lib/provider-copy";
+
+const trust = [
+  ["No trial.", " Free codes don't stop after 14 days."],
+  ["Codes keep working", ", even if you stop paying."],
+  ["Export anytime.", " Your codes and links are yours."],
+];
+const steps = [
+  ["01", "Scan or upload", "Use your phone camera, a photo of the code, or paste the link."],
+  ["02", "We follow the link", "We open every redirect in order and note which company runs each one."],
+  ["03", "You get a plain answer", "Still scans, At risk, or Stopped scanning, and what to do next."],
+];
+const staticNodes = [
+  { k: "Scan", v: "Phone camera" },
+  { k: "Code contains", v: "joescafe.com/menu", mono: true },
+  { k: "Opens", v: "joescafe.com/menu", mono: true },
+];
+const dynamicNodes = [
+  { k: "Scan", v: "Phone camera" },
+  { k: "Code contains", v: "qrfy.com/r/abc", mono: true },
+  { k: "Redirect server", v: "run by qrfy.com", warn: true },
+  { k: "Opens", v: "joescafe.com/menu", mono: true },
+];
+const promises = [
+  ["No trial", "Free codes are free forever. No card, no 14-day clock."],
+  ["Stop paying, keep scanning", "You only lose editing and analytics. Printed codes still work."],
+  ["Export anytime", "Download every code and where it points, whenever you like."],
+];
+const faqs = [
+  { q: "Do QR codes expire?", a: "Static codes don't. The link is inside the code, so it works as long as the website does. Dynamic codes can stop if the company running the redirect switches them off." },
+  { q: "How do I know if my code is static or dynamic?", a: "Check it above. If the link inside belongs to a QR company instead of your own website, it's dynamic." },
+  { q: "Why did my QR code stop working?", a: "Most often it was a dynamic code from a free generator, and the trial ended. The company stopped forwarding scans, so they no longer reach your page." },
+  { q: "Is StillScans free?", a: "Yes. Static codes are free and unlimited, and you get 3 permanent dynamic codes free. No card required." },
+  { q: "What happens if StillScans shuts down?", a: "Static codes keep working no matter what. You can export your dynamic codes and their destinations anytime. Our trust page explains the full plan." },
+];
+---
+
+<Base
+  title="Will your QR code still scan? Free QR code checker"
+  description="Scan or upload any QR code. We'll tell you who controls it, whether it can expire, and how to make it permanent — free."
+  jsonLd={faqJsonLd(faqs)}
+>
+  <SiteHeader client:load />
+  <main>
+    <section class="wrap hero">
+      <div class="hero__copy">
+        <h1 class="h1">Will your QR code still scan next month?</h1>
+        <p class="lead">Scan or upload any QR code. We'll tell you who controls it, whether it can expire, and how to make it permanent — free.</p>
+        <ul class="trust trust--wide only-wide">
+          {trust.map(([strong, rest]) => (
+            <li>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#12805C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+              <span><b>{strong}</b>{rest}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div class="hero__checker">
+        <div class="card card-pad card-raised">
+          <div class="h3" style="margin-bottom:16px">Check a QR code</div>
+          <Checker client:load />
+        </div>
+      </div>
+      <ul class="trust trust--phone only-phone">
+        {trust.map(([strong, rest]) => (
+          <li>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#12805C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+            <span><b>{strong}</b>{rest}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="section"><div class="wrap section__inner">
+      <h2 class="h2">How it works</h2>
+      <ol class="grid-220" style="list-style:none;margin-top:32px;padding:0">
+        {steps.map(([n, title, body]) => (
+          <li class="card card-24">
+            <div class="step-no">{n}</div>
+            <h3 class="h3" style="margin:12px 0 8px">{title}</h3>
+            <p class="body-15 muted">{body}</p>
+          </li>
+        ))}
+      </ol>
+    </div></section>
+
+    <section class="section"><div class="wrap section__inner">
+      <h2 class="h2">Static vs dynamic QR codes</h2>
+      <p class="muted pretty" style="margin-top:12px;max-width:620px">Both look the same on paper. The difference is who sits between the scan and your page.</p>
+      <div style="margin-top:32px;display:grid;gap:16px">
+        <div class="card card-pad">
+          <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px">
+            <h3 class="h3">Static</h3>
+            <span class="body-15 muted">The link is printed inside the code. Works forever, can't be edited.</span>
+          </div>
+          <div class="diagram" role="img" aria-label="Diagram: phone camera scans the code, which contains joescafe.com/menu, and opens joescafe.com/menu directly.">
+            {staticNodes.map((n, i) => (
+              <div class="diagram__item">
+                <div class="diagram__node">
+                  <div class="diagram__key">{n.k}</div>
+                  <div class:list={["diagram__value", { mono: n.mono }]}>{n.v}</div>
+                </div>
+                {i < staticNodes.length - 1 && <span aria-hidden="true" class="diagram__arrow" />}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div class="card card-pad">
+          <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px">
+            <h3 class="h3">Dynamic</h3>
+            <span class="body-15 muted">The code holds a short link to another company's server, which forwards each scan. Editable, but it stops if they stop.</span>
+          </div>
+          <div class="diagram" role="img" aria-label="Diagram: phone camera scans the code, which contains qrfy.com/r/abc. The qrfy.com redirect server forwards to joescafe.com/menu.">
+            {dynamicNodes.map((n, i) => (
+              <div class="diagram__item">
+                <div class:list={["diagram__node", { "is-warn": n.warn }]}>
+                  <div class="diagram__key">{n.k}</div>
+                  <div class:list={["diagram__value", { mono: n.mono }]}>{n.v}</div>
+                </div>
+                {i < dynamicNodes.length - 1 && <span aria-hidden="true" class="diagram__arrow" />}
+              </div>
+            ))}
+          </div>
+          <div class="warn-line">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B26A00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+            <span>If qrfy.com stops forwarding, for example when a trial ends, every printed copy stops scanning.</span>
+          </div>
+        </div>
+      </div>
+    </div></section>
+
+    <section class="section"><div class="wrap section__inner">
+      <h2 class="h2">Codes that keep working</h2>
+      <div class="grid-220" style="margin-top:32px">
+        {promises.map(([title, body]) => (
+          <div class="card card-24">
+            <h3 class="h3" style="margin-bottom:8px">{title}</h3>
+            <p class="body-15 muted">{body}</p>
+          </div>
+        ))}
+      </div>
+      <div class="guarantee">
+        <div class="guarantee__text">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7FD6B1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /><path d="m9 12 2 2 4-4" /></svg>
+          <p>If you stop paying, your codes keep working. You only lose editing and analytics.</p>
+        </div>
+        <a href="/trust">What if StillScans shuts down?</a>
+      </div>
+    </div></section>
+
+    <section class="section"><div class="wrap section__inner section__inner--narrow">
+      <h2 class="h2" style="margin-bottom:24px">Questions</h2>
+      <Faq client:visible items={faqs} />
+    </div></section>
+  </main>
+  <SiteFooter />
+</Base>

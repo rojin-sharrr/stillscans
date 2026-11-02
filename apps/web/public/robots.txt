@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /check/
+Disallow: /report
+Sitemap: https://usestillscans.com/sitemap.xml

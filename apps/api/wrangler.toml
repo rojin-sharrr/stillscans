@@ -1,0 +1,86 @@
+name = "stillscans-api"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+routes = [{ pattern = "api.usestillscans.com", custom_domain = true }]
+
+[vars]
+ENVIRONMENT = "production"
+WEB_ORIGIN = "https://usestillscans.com"
+
+[observability]
+enabled = true
+
+# Retry unsynced KV writes and purge expired data.
+[triggers]
+crons = ["*/5 * * * *"]
+
+# Replace the ids after creating the resources (see docs/DEPLOY.md).
+[[d1_databases]]
+binding = "DB"
+database_name = "stillscans"
+database_id = "REPLACE_WITH_PRODUCTION_D1_ID"
+migrations_dir = "../../packages/db/migrations"
+
+# Same namespace as redirect.
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_PRODUCTION_KV_ID"
+
+[[queues.consumers]]
+queue = "stillscans-scans"
+# 10 rows at 6 columns stays under D1's limit of 100 bound parameters per query.
+max_batch_size = 10
+max_batch_timeout = 30
+max_retries = 5
+dead_letter_queue = "stillscans-scans-dlq"
+
+[[ratelimits]]
+name = "CHECK_LIMITER"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }
+
+[[ratelimits]]
+name = "REPORT_LIMITER"
+namespace_id = "1002"
+simple = { limit = 5, period = 60 }
+
+[env.staging]
+name = "stillscans-api-staging"
+routes = []
+workers_dev = true
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+WEB_ORIGIN = "https://staging.usestillscans.com"
+
+[env.staging.triggers]
+crons = ["*/5 * * * *"]
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "stillscans-staging"
+database_id = "REPLACE_WITH_STAGING_D1_ID"
+migrations_dir = "../../packages/db/migrations"
+
+[[env.staging.kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_STAGING_KV_ID"
+
+[[env.staging.queues.consumers]]
+queue = "stillscans-scans-staging"
+max_batch_size = 10
+max_batch_timeout = 30
+max_retries = 5
+dead_letter_queue = "stillscans-scans-staging-dlq"
+
+[[env.staging.ratelimits]]
+name = "CHECK_LIMITER"
+namespace_id = "2001"
+simple = { limit = 30, period = 60 }
+
+[[env.staging.ratelimits]]
+name = "REPORT_LIMITER"
+namespace_id = "2002"
+simple = { limit = 5, period = 60 }

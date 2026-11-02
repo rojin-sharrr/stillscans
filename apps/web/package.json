@@ -1,0 +1,28 @@
+{
+  "name": "@stillscans/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro build && wrangler dev --port 4321 --inspector-port 9332",
+    "build": "astro build",
+    "preview": "wrangler dev --port 4321",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "typecheck": "astro check"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@types/node": "^26.6.6",
+    "typescript": "^6.0.3",
+    "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "@astrojs/preact": "^6.1.1",
+    "@stillscans/providers": "workspace:*",
+    "@stillscans/shared": "workspace:*",
+    "astro": "^7.4.5",
+    "jsqr": "^1.4.0",
+    "preact": "^11.1.1"
+  }
+}

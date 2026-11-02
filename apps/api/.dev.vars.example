@@ -1,0 +1,5 @@
+# Copy to .dev.vars for local development. .dev.vars is git-ignored.
+ENVIRONMENT=development
+WEB_ORIGIN=http://localhost:4321
+# Optional locally: without a key, code creation skips the threat lookup in development only.
+# SAFE_BROWSING_API_KEY=

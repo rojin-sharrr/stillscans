@@ -1,0 +1,24 @@
+{
+  "formatter": { "indentStyle": "space", "lineWidth": 100 },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "a11y": { "noSvgWithoutTitle": "off", "useSemanticElements": "off" },
+      "style": { "noDescendingSpecificity": "off" }
+    }
+  },
+  "assist": { "enabled": false },
+  "files": {
+    "includes": [
+      "**",
+      "!**/migrations",
+      "!**/.wrangler",
+      "!**/.turbo",
+      "!**/.astro",
+      "!**/dist",
+      "!**/*.astro",
+      "!**/StillScans Core Screens"
+    ]
+  }
+}

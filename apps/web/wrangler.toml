@@ -1,0 +1,14 @@
+name = "stillscans-web"
+compatibility_date = "2026-10-01"
+
+routes = [{ pattern = "usestillscans.com", custom_domain = true }]
+
+# Static site: Cloudflare serves dist/ directly, so there is no server to fail.
+[assets]
+directory = "./dist"
+not_found_handling = "404-page"
+
+[env.staging]
+name = "stillscans-web-staging"
+routes = []
+workers_dev = true

@@ -1,0 +1,128 @@
+---
+import { type Provider, providers, RATINGS } from "@stillscans/providers";
+import { Badge } from "../../components/Badge";
+import { Checker } from "../../components/Checker";
+import { Faq } from "../../components/Faq";
+import { SiteHeader } from "../../components/SiteHeader";
+import SiteFooter from "../../components/SiteFooter.astro";
+import Base from "../../layouts/Base.astro";
+import { formatDate, NOT_VERIFIED } from "../../lib/format";
+import { faqJsonLd, providerAnswer, providerFacts, providerFaqs } from "../../lib/provider-copy";
+
+export function getStaticPaths() {
+  return providers.map((provider) => ({ params: { slug: provider.slug }, props: { provider } }));
+}
+
+const { provider: p } = Astro.props as { provider: Provider };
+const faqs = providerFaqs(p);
+const related = providers.filter((x) => x.slug !== p.slug && x.rating !== "unknown").slice(0, 3);
+const reportHref = `/report?provider=${p.slug}`;
+const rating = RATINGS[p.rating];
+const options = [
+  ["Keep paying", "Your codes keep redirecting while the plan stays active."],
+  ["Reprint", "Replace the materials with a static code that holds your link directly."],
+];
+---
+
+<Base
+  title={`${p.name}: do their QR codes expire? · StillScans`}
+  description={`${providerAnswer(p)} Free option, trial length, redirect domains and what happens to ${p.name} codes when you stop paying.`}
+  jsonLd={faqJsonLd(faqs)}
+>
+  <SiteHeader client:load onDirectory />
+  <main class="wrap detail">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="/providers">Providers</a><span aria-hidden="true">/</span><span aria-current="page">{p.name}</span>
+    </nav>
+    <h1 class="h1">{p.name}: do their QR codes expire?</h1>
+
+    <div class="detail__layout">
+      <div class="detail__main">
+        <section aria-label="Summary" class={`summary tone-${p.rating}`}>
+          <div class="summary__label">When you stop paying</div>
+          <div class="summary__rating"><span aria-hidden="true" class="summary__glyph">{rating.glyph}</span>{rating.label}</div>
+          <p class="summary__answer">{providerAnswer(p)}</p>
+          <div class="summary__meta">
+            <span>Last verified: {formatDate(p.verified)}</span>
+            {p.sources.policy && <a href={p.sources.policy} rel="noopener noreferrer">Source: {p.site} help page</a>}
+          </div>
+        </section>
+
+        <section aria-labelledby="facts">
+          <h2 id="facts" class="h2">The facts</h2>
+          <dl class="card fact-list">
+            {providerFacts(p).map((fact) => {
+              const source = fact.value ? p.sources[fact.field] : undefined;
+              return (
+                <div>
+                  <dt>{fact.key}</dt>
+                  <dd class:list={{ mono: fact.value && fact.mono, unverified: !fact.value }}>{fact.value ?? NOT_VERIFIED}</dd>
+                  <dd class="source">
+                    {source
+                      ? <a href={source} rel="noopener noreferrer">Source</a>
+                      : <a href={reportHref} class="is-unverified">Help us verify</a>}
+                  </dd>
+                </div>
+              );
+            })}
+          </dl>
+        </section>
+
+        <section aria-labelledby="tell">
+          <h2 id="tell" class="h2">How to tell if your code uses {p.name}</h2>
+          <p class="pretty" style="margin-top:12px;max-width:62ch">Point your phone camera at the code and read the link preview before you tap it. If it starts with one of these domains, every scan goes through {p.name} first.</p>
+          <div class="domain-chips">
+            {(p.domains.length ? p.domains : [NOT_VERIFIED]).map((domain) => <span>{domain}</span>)}
+          </div>
+          <div class="only-phone">
+            <div class="card" style="margin-top:20px;padding:20px;display:grid;gap:12px">
+              <div style="font-weight:600;font-size:18px;line-height:26px">Or let us check it</div>
+              <Checker client:visible compact idPrefix="detail-phone" />
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="printed">
+          <h2 id="printed" class="h2">Already printed codes from {p.name}?</h2>
+          <p class="muted pretty" style="margin-top:12px;max-width:62ch">You have three options. None of them is urgent while your plan is active.</p>
+          <ol class="options">
+            {options.map(([title, body]) => (
+              <li class="card"><h3>{title}</h3><p class="body-15 muted">{body}</p></li>
+            ))}
+            <li class="card">
+              <h3>Replace with a permanent code</h3>
+              <p class="body-15 muted">Point a StillScans code at the same page and put it on a sticker over the old one.</p>
+              <a href="/create" class="link-strong" style="margin-top:8px">Make one free</a>
+            </li>
+          </ol>
+        </section>
+
+        <section aria-labelledby="faq">
+          <h2 id="faq" class="h2" style="margin-bottom:16px">Questions about {p.name}</h2>
+          <Faq client:visible items={faqs} />
+        </section>
+
+        <div class="update-bar"><span>Is this out of date? Providers can reply too.</span><a href={reportHref}>Report an update</a></div>
+
+        <section aria-labelledby="related">
+          <h2 id="related" class="h3">Related providers</h2>
+          <ul class="related">
+            {related.map((x) => (
+              <li><a href={`/providers/${x.slug}`} class="card"><span>{x.name}</span><Badge rating={x.rating} /></a></li>
+            ))}
+          </ul>
+        </section>
+      </div>
+
+      <aside class="detail__aside only-wide">
+        <div class="card card-raised">
+          <h2 class="h3" style="text-wrap:balance">Check a code from {p.name}</h2>
+          <p class="body-15 muted">See where it points and whether it's still active.</p>
+          <Checker client:visible compact idPrefix="detail" />
+          <p class="micro muted" style="text-align:center">Free. No account. Results stay private.</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <SiteFooter />
+</Base>

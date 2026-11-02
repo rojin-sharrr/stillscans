@@ -1,0 +1,15 @@
+{
+  "name": "@stillscans/redirect",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8787 --inspector-port 9331 --persist-to ../../.wrangler/state",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@stillscans/shared": "workspace:*"
+  }
+}

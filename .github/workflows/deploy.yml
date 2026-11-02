@@ -1,0 +1,92 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+env:
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    outputs:
+      redirect: ${{ steps.changes.outputs.redirect }}
+      api: ${{ steps.changes.outputs.api }}
+      web: ${{ steps.changes.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            redirect:
+              - apps/redirect/**
+              - packages/shared/**
+              - pnpm-lock.yaml
+            api:
+              - apps/api/**
+              - packages/**
+              - pnpm-lock.yaml
+            web:
+              - apps/web/**
+              - packages/shared/**
+              - packages/providers/**
+              - pnpm-lock.yaml
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  # Deployed first because redirect sends to the queue that api consumes.
+  deploy-api:
+    needs: verify
+    if: needs.verify.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec wrangler deploy --env=""
+        working-directory: apps/api
+
+  # Printed codes depend on this Worker, so it re-runs its own tests right before going out.
+  deploy-redirect:
+    needs: [verify, deploy-api]
+    if: always() && needs.verify.result == 'success' && needs.deploy-api.result != 'failure' && needs.verify.outputs.redirect == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec vitest run
+        working-directory: apps/redirect
+      - run: pnpm exec wrangler deploy --env=""
+        working-directory: apps/redirect
+
+  deploy-web:
+    needs: verify
+    if: needs.verify.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec astro build
+        working-directory: apps/web
+      - run: pnpm exec wrangler deploy --env=""
+        working-directory: apps/web
