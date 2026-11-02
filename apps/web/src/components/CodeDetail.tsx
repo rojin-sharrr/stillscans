@@ -9,13 +9,14 @@ import {
   fetchCode,
   updateCode,
 } from "../lib/api";
-import { checkedAgo, displayUrl } from "../lib/format";
+import { checkedAgo, displayUrl, formatDate } from "../lib/format";
 import { rememberSignedIn } from "../lib/session-hint";
 import { AnalyticsPanel } from "./AnalyticsPanel";
-import { UpgradeCard } from "./UpgradeCard";
+import { ProCallout } from "./ProCallout";
 import { CodeStatus } from "./CodeStatus";
 import { DesignControls } from "./DesignControls";
 import { QrPreview } from "./QrPreview";
+import { StatRow } from "./StatRow";
 
 const ERRORS: Record<string, string> = {
   invalid_destination: "Enter a valid web address, like joescafe.com/menu.",
@@ -306,7 +307,20 @@ export function CodeDetail() {
       {account.features.analytics ? (
         <AnalyticsPanel codeId={code.id} onUnauthorized={onUnauthorized} />
       ) : (
-        <UpgradeCard totalScans={code.scans} />
+        <>
+          <div class="code-stats">
+            <StatRow
+              stats={[
+                { label: "Total scans", value: (code.scans ?? 0).toLocaleString("en-US") },
+                {
+                  label: "Created",
+                  value: formatDate(new Date(code.createdAt).toISOString().slice(0, 10)),
+                },
+              ]}
+            />
+          </div>
+          <ProCallout email={account.email} />
+        </>
       )}
     </main>
   );

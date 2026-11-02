@@ -11,7 +11,8 @@ import {
 import { displayUrl } from "../lib/format";
 import { rememberSignedIn } from "../lib/session-hint";
 import { AnalyticsPanel } from "./AnalyticsPanel";
-import { UpgradeCard } from "./UpgradeCard";
+import { ProCallout } from "./ProCallout";
+import { StatRow } from "./StatRow";
 import { CodeStatus } from "./CodeStatus";
 
 function downloadJson(data: unknown): void {
@@ -62,14 +63,22 @@ export function Dashboard() {
   }
   if (!account || !codes) return null;
 
+  const stats = [
+    {
+      label: "Total scans",
+      value: codes.reduce((sum, code) => sum + (code.scans ?? 0), 0).toLocaleString("en-US"),
+    },
+    { label: "Codes used", value: `${account.liveCodes} of ${account.codeAllowance}` },
+    { label: "Plan", value: PLANS[account.plan].label },
+  ];
+
   return (
     <main class="wrap dashboard">
       <div class="dashboard__head">
         <div>
           <h1 class="h1">Your codes</h1>
           <p class="small muted" style={{ marginTop: "4px" }}>
-            {account.email} · {PLANS[account.plan].label} plan · {account.liveCodes} of{" "}
-            {account.codeAllowance} permanent codes used
+            {account.email}
           </p>
         </div>
         <div class="dashboard__actions">
@@ -85,6 +94,8 @@ export function Dashboard() {
           </a>
         </div>
       </div>
+
+      <StatRow stats={stats} />
 
       {codes.length === 0 ? (
         <div class="card empty">
@@ -109,7 +120,9 @@ export function Dashboard() {
                 <div class="mono small muted code-cards__destination">
                   {displayUrl(code.destination)}
                 </div>
-                <div class="small muted">{(code.scans ?? 0).toLocaleString("en-US")} scans</div>
+                <div class="small muted">
+                  {(code.scans ?? 0).toLocaleString("en-US")} {code.scans === 1 ? "scan" : "scans"}
+                </div>
               </li>
             ))}
           </ul>
@@ -154,7 +167,7 @@ export function Dashboard() {
           {account.features.analytics ? (
             <AnalyticsPanel onUnauthorized={onUnauthorized} />
           ) : (
-            <UpgradeCard totalScans={codes.reduce((sum, code) => sum + (code.scans ?? 0), 0)} />
+            <ProCallout email={account.email} />
           )}
         </>
       )}

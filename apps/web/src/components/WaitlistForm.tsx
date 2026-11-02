@@ -4,8 +4,16 @@ import { joinWaitlist } from "../lib/api";
 type State = "idle" | "sending" | "sent" | "failed";
 
 /** Collects interest in a plan that isn't on sale yet. */
-export function WaitlistForm({ plan, label }: { plan: "pro" | "business"; label: string }) {
-  const [email, setEmail] = useState("");
+interface Props {
+  plan: "pro" | "business";
+  label: string;
+  initialEmail?: string;
+  /** Puts the field and button on one line where there's room. */
+  inline?: boolean;
+}
+
+export function WaitlistForm({ plan, label, initialEmail = "", inline = false }: Props) {
+  const [email, setEmail] = useState(initialEmail);
   const [state, setState] = useState<State>("idle");
 
   const submit = async (event: Event) => {
@@ -29,7 +37,7 @@ export function WaitlistForm({ plan, label }: { plan: "pro" | "business"; label:
 
   const inputId = `ss-waitlist-${plan}`;
   return (
-    <form class="waitlist" onSubmit={submit}>
+    <form class={inline ? "waitlist waitlist--inline" : "waitlist"} onSubmit={submit}>
       <label for={inputId} class="sr-only">
         Email address
       </label>
