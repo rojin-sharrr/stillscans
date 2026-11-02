@@ -15,7 +15,7 @@ export function CameraScanner({ onDecoded, onCancel }: Props) {
 
   useEffect(() => {
     let stream: MediaStream | null = null;
-    let timer: ReturnType<typeof setInterval> | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     let stopped = false;
 
     const start = async () => {
@@ -29,13 +29,14 @@ export function CameraScanner({ onDecoded, onCancel }: Props) {
         await video.current.play();
 
         const decode = await createVideoDecoder();
-        timer = setInterval(() => {
-          const text = video.current ? decode(video.current) : null;
-          if (text) {
-            clearInterval(timer);
-            onDecoded(text);
-          }
-        }, SCAN_INTERVAL_MS);
+        // Decoding is async, so each scan is scheduled after the last one finishes.
+        const scan = async () => {
+          const text = video.current ? await decode(video.current) : null;
+          if (stopped) return;
+          if (text) onDecoded(text);
+          else timer = setTimeout(() => void scan().catch(() => setFailed(true)), SCAN_INTERVAL_MS);
+        };
+        await scan();
       } catch {
         setFailed(true);
       }
@@ -44,7 +45,7 @@ export function CameraScanner({ onDecoded, onCancel }: Props) {
 
     return () => {
       stopped = true;
-      clearInterval(timer);
+      clearTimeout(timer);
       for (const track of stream?.getTracks() ?? []) track.stop();
     };
   }, [onDecoded]);

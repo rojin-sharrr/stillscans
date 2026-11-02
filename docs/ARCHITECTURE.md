@@ -104,6 +104,6 @@ Each of these has no design yet, or needs a decision.
 | Sign-in                                                                             | `middleware/auth.ts` validates sessions, but nothing issues them. Needs an auth decision            |
 | Stripe                                                                              | Not started. Paying should only raise `users.code_allowance`                                        |
 | Create code, Pricing, Dashboard, Analytics, Guides, Comparison, Trust, Auth screens | No design. These links show the 404 page for now. The API for create, edit, stats and export exists |
-| Server-side QR decoding                                                             | Skipped. An image jsQR can't read shows "Couldn't read", with paste as the fallback                 |
+| Server-side QR decoding                                                             | Skipped. An image ZXing can't read shows "Couldn't read", with paste as the fallback                |
 | Re-scanning destinations                                                            | Nothing sets `blocked` automatically. `redirect` honours it; a scheduled job is needed              |
 | Dark mode, OG images                                                                | Not designed                                                                                        |
