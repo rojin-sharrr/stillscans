@@ -17,6 +17,7 @@ const TIMEOUT_MS = 3_000;
 export function createWebRiskChecker(
   apiKey: string | undefined,
   fetcher: typeof fetch = fetch,
+  onFailure: (detail: Record<string, unknown>) => void = () => {},
 ): ThreatChecker {
   return {
     async check(url) {
@@ -28,10 +29,22 @@ export function createWebRiskChecker(
           headers: { "x-goog-api-key": apiKey },
           signal: AbortSignal.timeout(TIMEOUT_MS),
         });
-        if (!res.ok) return "unknown";
+        if (!res.ok) {
+          // Google's error names the cause, such as a disabled API or missing billing.
+          const body = (await res.json().catch(() => null)) as {
+            error?: { status?: string; message?: string };
+          } | null;
+          onFailure({
+            httpStatus: res.status,
+            status: body?.error?.status,
+            message: body?.error?.message,
+          });
+          return "unknown";
+        }
         const body = (await res.json()) as { threat?: unknown };
         return body.threat ? "unsafe" : "safe";
-      } catch {
+      } catch (error) {
+        onFailure({ error: String(error) });
         return "unknown";
       }
     },

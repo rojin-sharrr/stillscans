@@ -128,6 +128,22 @@ describe("web risk", () => {
     expect(await createWebRiskChecker("k", down).check("https://a.com")).toBe("unknown");
   });
 
+  it("reports why a lookup failed", async () => {
+    const rejected = vi.fn(async () =>
+      Response.json(
+        { error: { status: "PERMISSION_DENIED", message: "API not enabled" } },
+        { status: 403 },
+      ),
+    ) as typeof fetch;
+    const onFailure = vi.fn();
+    await createWebRiskChecker("k", rejected, onFailure).check("https://a.com");
+    expect(onFailure).toHaveBeenCalledWith({
+      httpStatus: 403,
+      status: "PERMISSION_DENIED",
+      message: "API not enabled",
+    });
+  });
+
   it("maps a threat to unsafe and an empty answer to safe", async () => {
     const hit = vi.fn(async () =>
       Response.json({ threat: { threatTypes: ["MALWARE"] } }),

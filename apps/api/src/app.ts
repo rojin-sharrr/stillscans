@@ -34,7 +34,12 @@ export interface AppDeps {
 
 const defaultDeps: AppDeps = {
   fetch: (...args) => fetch(...args),
-  threats: (env) => createWebRiskChecker(env.WEB_RISK_API_KEY),
+  threats: (env) =>
+    createWebRiskChecker(
+      env.WEB_RISK_API_KEY,
+      (...args) => fetch(...args),
+      (detail) => log("error", "threat_lookup_failed", detail),
+    ),
 };
 
 export function createApp(deps: AppDeps = defaultDeps) {
