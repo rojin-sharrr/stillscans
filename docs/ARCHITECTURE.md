@@ -68,6 +68,14 @@ The checker fetches untrusted URLs. Defence is in `packages/url-safety`:
 - Names are resolved over DNS-over-HTTPS (two resolvers) and refused if any address is private. If
   both resolvers fail the fetch still proceeds, because Workers have no route to private networks.
 
+## Database connections
+
+Workers reach Neon through Hyperdrive, which pools in transaction mode, like PgBouncer. A connection
+is only held within a transaction, so don't rely on session state between queries.
+
+Hyperdrive's query cache is deliberately off. It isn't cleared by writes, so it would let signed-out
+sessions keep working and show stale dashboards and code limits. Keep it off for any new config.
+
 ## Sign-in
 
 Google is the only sign-in method. Sessions are 30-day HttpOnly cookies shared across

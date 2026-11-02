@@ -13,6 +13,8 @@ Created on the Cloudflare account, with their ids already in the `wrangler.toml`
 | Queue      | `stillscans-scans` and `stillscans-scans-dlq` |                                    |
 | Hyperdrive | `stillscans`                                  | `70a08af8c6844c128d2839948ddd5e22` |
 
+Hyperdrive caching must stay disabled: `--caching-disabled true`.
+
 Staging resources don't exist yet. To add them, create the same set with `-staging` names and fill
 in the `REPLACE_WITH_STAGING_*` values.
 

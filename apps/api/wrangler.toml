@@ -19,6 +19,7 @@ enabled = true
 crons = ["*/5 * * * *"]
 
 # Replace the ids after creating the resources (see docs/DEPLOY.md).
+# Query caching is disabled on this config: Hyperdrive's cache ignores writes (see docs/ARCHITECTURE.md).
 [[hyperdrive]]
 binding = "HYPERDRIVE"
 id = "70a08af8c6844c128d2839948ddd5e22"
