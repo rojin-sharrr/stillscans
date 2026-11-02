@@ -1,10 +1,10 @@
 ---
 import { CodeDetail } from "../../../components/CodeDetail";
-import { SiteHeader } from "../../../components/SiteHeader";
+import { AppHeader } from "../../../components/AppHeader";
 import Base from "../../../layouts/Base.astro";
 ---
 
-<Base title="Your code · StillScans" noindex>
-  <SiteHeader client:load />
+<Base title="Your code · StillScans" noindex requireSession>
+  <AppHeader client:only="preact" />
   <CodeDetail client:only="preact" />
 </Base>

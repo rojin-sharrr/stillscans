@@ -5,6 +5,10 @@ import { bigint, index, integer, pgTable, primaryKey, text } from "drizzle-orm/p
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
+  /** Decides features only. It never affects redirects. See PLANS in @stillscans/shared. */
+  plan: text("plan", { enum: ["free", "pro", "business"] })
+    .notNull()
+    .default("free"),
   /** Dynamic codes this account may hold. Free is 5; Pro raises it to 100. */
   codeAllowance: integer("code_allowance").notNull().default(5),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),

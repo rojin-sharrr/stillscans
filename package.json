@@ -17,7 +17,8 @@
     "db:generate": "pnpm --filter @stillscans/db exec drizzle-kit generate",
     "db:migrate": "./scripts/db-migrate.sh",
     "db:migrate:url": "./scripts/db-migrate-url.sh",
-    "waitlist:count": "./scripts/waitlist-count.sh"
+    "waitlist:count": "./scripts/waitlist-count.sh",
+    "plan:set": "./scripts/set-plan.sh"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.4",

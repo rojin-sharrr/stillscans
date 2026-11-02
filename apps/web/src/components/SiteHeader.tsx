@@ -1,6 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 import { isSignedIn } from "../lib/session-hint";
 import { Logo } from "./Logo";
+import { LogoutButton } from "./LogoutButton";
 
 const LINKS = [
   { label: "Guides", href: "/guides" },
@@ -59,6 +60,7 @@ export function SiteHeader({ onDirectory = false }: { onDirectory?: boolean }) {
           <a href={account.href} class="site-nav__signin">
             {account.label}
           </a>
+          {signedIn && <LogoutButton />}
         </nav>
       </div>
       {open && (
@@ -69,6 +71,7 @@ export function SiteHeader({ onDirectory = false }: { onDirectory?: boolean }) {
             </a>
           ))}
           <a href={account.href}>{account.label}</a>
+          {signedIn && <LogoutButton labelled />}
         </nav>
       )}
     </header>

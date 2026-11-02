@@ -1,4 +1,5 @@
 import { countLiveCodes, upsertUser } from "@stillscans/db";
+import { PLANS } from "@stillscans/shared";
 import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { AppEnv } from "../app";
@@ -141,9 +142,10 @@ export function authRoutes(fetcher: typeof fetch) {
   });
 
   routes.get("/me", requireUser, async (c) => {
-    const { email, codeAllowance, id } = c.get("user");
+    const { email, codeAllowance, id, plan } = c.get("user");
     const liveCodes = await countLiveCodes(c.get("db"), id);
-    return c.json({ email, codeAllowance, liveCodes });
+    const { analytics, branding } = PLANS[plan];
+    return c.json({ email, codeAllowance, liveCodes, plan, features: { analytics, branding } });
   });
 
   routes.post("/logout", requireUser, async (c) => {

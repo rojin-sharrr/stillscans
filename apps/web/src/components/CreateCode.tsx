@@ -1,6 +1,6 @@
-import { DEFAULT_QR_DESIGN, type QrDesign } from "@stillscans/shared";
+import { DEFAULT_QR_DESIGN, type QrDesign, withoutBranding } from "@stillscans/shared";
 import { useEffect, useState } from "preact/hooks";
-import { ApiRequestError, type Code, createCode } from "../lib/api";
+import { ApiRequestError, type Code, createCode, fetchAccount } from "../lib/api";
 import { clearDraft, loadDraft, saveDraft } from "../lib/qr-design";
 import { isSignedIn, rememberSignedIn } from "../lib/session-hint";
 import { DesignControls } from "./DesignControls";
@@ -15,6 +15,7 @@ const ERRORS: Record<string, string> = {
   unsafe_destination: "This address is listed as unsafe, so we can't make a code for it.",
   safety_check_unavailable: "We couldn't check this address just now. Try again in a moment.",
   code_limit_reached: "You've used all your permanent codes. Archive one to free a slot.",
+  plan_required: "Your logo and colors are part of Pro, which is coming soon.",
 };
 
 const KINDS: { id: Kind; title: string; body: string }[] = [
@@ -44,8 +45,14 @@ export function CreateCode() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<Code | null>(null);
+  const [branding, setBranding] = useState(false);
 
   useEffect(() => {
+    if (isSignedIn()) {
+      fetchAccount()
+        .then((account) => setBranding(account.features.branding))
+        .catch(() => setBranding(false));
+    }
     const params = new URLSearchParams(window.location.search);
     setSticker(params.has("sticker"));
     const draft = loadDraft();
@@ -60,6 +67,8 @@ export function CreateCode() {
     if (fromCheck) setDestination(fromCheck);
   }, []);
 
+  // Drops branding left in a draft, so an account never sees a design it can't save.
+  const activeDesign = branding ? design : withoutBranding(design);
   const hasDestination = destination.trim().length > 0;
   const payload = created
     ? `https://${created.printedLink}`
@@ -73,7 +82,7 @@ export function CreateCode() {
       setError("Enter where the code should go.");
       return;
     }
-    const draft = { destination, kind, label, design };
+    const draft = { destination, kind, label, design: activeDesign };
     if (!isSignedIn()) {
       saveDraft(draft);
       window.location.assign("/sign-in?from=create");
@@ -83,7 +92,7 @@ export function CreateCode() {
     try {
       const { code } = await createCode({
         destination,
-        design,
+        design: activeDesign,
         ...(label.trim() ? { label: label.trim() } : {}),
       });
       setCreated(code);
@@ -129,7 +138,7 @@ export function CreateCode() {
         </div>
         <aside class="create__preview">
           <div class="card card-pad">
-            <QrPreview payload={payload} design={design} name={label} downloadable />
+            <QrPreview payload={payload} design={activeDesign} name={label} downloadable />
           </div>
         </aside>
       </div>
@@ -210,7 +219,7 @@ export function CreateCode() {
           <h2 class="h3" style={{ margin: "12px 0 16px" }}>
             Make it yours
           </h2>
-          <DesignControls design={design} onChange={setDesign} />
+          <DesignControls design={activeDesign} onChange={setDesign} branding={branding} />
         </section>
 
         {error && (
@@ -238,7 +247,12 @@ export function CreateCode() {
           <h2 class="h3" style={{ marginBottom: "16px" }}>
             Preview
           </h2>
-          <QrPreview payload={payload} design={design} name={label} downloadable={staticReady} />
+          <QrPreview
+            payload={payload}
+            design={activeDesign}
+            name={label}
+            downloadable={staticReady}
+          />
           {kind === "dynamic" && (
             <p class="small muted pretty" style={{ marginTop: "12px" }}>
               Prints as <span class="mono">stillscans.net/xxxxxx</span>. You'll get the real link

@@ -1,9 +1,18 @@
 import { DEFAULT_QR_DESIGN, type QrDesign } from "@stillscans/shared";
 import { useCallback, useEffect, useState } from "preact/hooks";
-import { ApiRequestError, archiveCode, type Code, fetchCode, updateCode } from "../lib/api";
+import {
+  type Account,
+  ApiRequestError,
+  archiveCode,
+  type Code,
+  fetchAccount,
+  fetchCode,
+  updateCode,
+} from "../lib/api";
 import { checkedAgo, displayUrl } from "../lib/format";
 import { rememberSignedIn } from "../lib/session-hint";
 import { AnalyticsPanel } from "./AnalyticsPanel";
+import { UpgradeCard } from "./UpgradeCard";
 import { CodeStatus } from "./CodeStatus";
 import { DesignControls } from "./DesignControls";
 import { QrPreview } from "./QrPreview";
@@ -12,6 +21,7 @@ const ERRORS: Record<string, string> = {
   invalid_destination: "Enter a valid web address, like joescafe.com/menu.",
   unsafe_destination: "This address is listed as unsafe, so we can't point a code at it.",
   safety_check_unavailable: "We couldn't check this address just now. Try again in a moment.",
+  plan_required: "Your logo and colors are part of Pro, which is coming soon.",
   code_blocked: "This code was stopped for safety, so it can't be changed.",
   code_limit_reached: "You've used all your permanent codes. Archive one to restore this one.",
 };
@@ -24,6 +34,7 @@ function codeIdFromPath(): string {
 
 export function CodeDetail() {
   const [code, setCode] = useState<Code | null>(null);
+  const [account, setAccount] = useState<Account | null>(null);
   const [history, setHistory] = useState<History>([]);
   const [destination, setDestination] = useState("");
   const [label, setLabel] = useState("");
@@ -41,7 +52,8 @@ export function CodeDetail() {
 
   const load = useCallback(async () => {
     try {
-      const data = await fetchCode(codeIdFromPath());
+      const [data, me] = await Promise.all([fetchCode(codeIdFromPath()), fetchAccount()]);
+      setAccount(me);
       setCode(data.code);
       setHistory(data.destinations);
       setDestination(displayUrl(data.code.destination));
@@ -85,7 +97,7 @@ export function CodeDetail() {
       </main>
     );
   }
-  if (!code) return null;
+  if (!code || !account) return null;
 
   const editable = code.status !== "blocked";
   const paused = code.status === "paused";
@@ -267,7 +279,11 @@ export function CodeDetail() {
             </button>
             {editingDesign && (
               <>
-                <DesignControls design={design} onChange={setDesign} />
+                <DesignControls
+                  design={design}
+                  onChange={setDesign}
+                  branding={account.features.branding}
+                />
                 <button
                   type="button"
                   class="btn btn-primary"
@@ -287,7 +303,11 @@ export function CodeDetail() {
         </aside>
       </div>
 
-      <AnalyticsPanel codeId={code.id} onUnauthorized={onUnauthorized} />
+      {account.features.analytics ? (
+        <AnalyticsPanel codeId={code.id} onUnauthorized={onUnauthorized} />
+      ) : (
+        <UpgradeCard totalScans={code.scans} />
+      )}
     </main>
   );
 }

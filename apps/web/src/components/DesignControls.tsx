@@ -11,9 +11,11 @@ const MODULES: { id: QrDesign["modules"]; label: string }[] = [
 interface Props {
   design: QrDesign;
   onChange: (design: QrDesign) => void;
+  /** Whether this account's plan includes a logo and custom colors. */
+  branding: boolean;
 }
 
-export function DesignControls({ design, onChange }: Props) {
+export function DesignControls({ design, onChange, branding }: Props) {
   const [logoError, setLogoError] = useState<string | null>(null);
   const update = (changes: Partial<QrDesign>) => onChange({ ...design, ...changes });
 
@@ -34,6 +36,7 @@ export function DesignControls({ design, onChange }: Props) {
           <span>Code color</span>
           <input
             type="color"
+            disabled={!branding}
             value={design.foreground}
             onInput={(event) => update({ foreground: event.currentTarget.value.toUpperCase() })}
           />
@@ -43,6 +46,7 @@ export function DesignControls({ design, onChange }: Props) {
           <span>Background</span>
           <input
             type="color"
+            disabled={!branding}
             value={design.background}
             onInput={(event) => update({ background: event.currentTarget.value.toUpperCase() })}
           />
@@ -91,30 +95,40 @@ export function DesignControls({ design, onChange }: Props) {
         </div>
       )}
 
-      <div class="field">
-        <span class="field__label">Logo</span>
-        <div class="logo-field">
-          <label class="btn btn-secondary">
-            {design.logo ? "Change logo" : "Add a logo"}
-            <input
-              type="file"
-              accept="image/*"
-              class="sr-only"
-              onChange={(event) => void onLogo(event.currentTarget.files?.[0])}
-            />
-          </label>
-          {design.logo && (
-            <button type="button" class="btn btn-secondary" onClick={() => update({ logo: null })}>
-              Remove
-            </button>
+      {branding ? (
+        <div class="field">
+          <span class="field__label">Logo</span>
+          <div class="logo-field">
+            <label class="btn btn-secondary">
+              {design.logo ? "Change logo" : "Add a logo"}
+              <input
+                type="file"
+                accept="image/*"
+                class="sr-only"
+                onChange={(event) => void onLogo(event.currentTarget.files?.[0])}
+              />
+            </label>
+            {design.logo && (
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onClick={() => update({ logo: null })}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+          {logoError && (
+            <p class="form-error" role="alert">
+              {logoError}
+            </p>
           )}
         </div>
-        {logoError && (
-          <p class="form-error" role="alert">
-            {logoError}
-          </p>
-        )}
-      </div>
+      ) : (
+        <p class="plan-note">
+          Your logo and colors are part of Pro, <a href="/pricing">coming soon</a>.
+        </p>
+      )}
     </div>
   );
 }

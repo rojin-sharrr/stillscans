@@ -57,6 +57,7 @@ pnpm lint        # biome
 pnpm format      # biome, writing fixes
 pnpm db:generate   # new migration after editing schema.ts
 pnpm db:migrate    # apply to the dev database in .env
+pnpm plan:set you@example.com pro   # set an account's plan (add .env.prod for production)
 pnpm db:migrate:url   # paste any Neon URL and apply what it hasn't run yet
 ```
 

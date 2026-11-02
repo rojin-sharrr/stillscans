@@ -5,6 +5,7 @@ import type {
   CheckResult,
   CreateReportInput,
   JoinWaitlistInput,
+  Plan,
   QrDesign,
 } from "@stillscans/shared";
 
@@ -99,6 +100,8 @@ export interface Account {
   email: string;
   codeAllowance: number;
   liveCodes: number;
+  plan: Plan;
+  features: { analytics: boolean; branding: boolean };
 }
 export const fetchAccount = () => authed<Account>("/api/auth/me");
 

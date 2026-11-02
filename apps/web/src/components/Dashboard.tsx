@@ -1,3 +1,4 @@
+import { PLANS } from "@stillscans/shared";
 import { useCallback, useEffect, useState } from "preact/hooks";
 import {
   type Account,
@@ -6,11 +7,11 @@ import {
   fetchAccount,
   fetchCodes,
   fetchExport,
-  signOut,
 } from "../lib/api";
 import { displayUrl } from "../lib/format";
 import { rememberSignedIn } from "../lib/session-hint";
 import { AnalyticsPanel } from "./AnalyticsPanel";
+import { UpgradeCard } from "./UpgradeCard";
 import { CodeStatus } from "./CodeStatus";
 
 function downloadJson(data: unknown): void {
@@ -47,12 +48,6 @@ export function Dashboard() {
       });
   }, [onUnauthorized]);
 
-  const logOut = async () => {
-    await signOut().catch(() => {});
-    rememberSignedIn(false);
-    window.location.assign("/");
-  };
-
   if (failed) {
     return (
       <main class="narrow">
@@ -73,7 +68,8 @@ export function Dashboard() {
         <div>
           <h1 class="h1">Your codes</h1>
           <p class="small muted" style={{ marginTop: "4px" }}>
-            {account.email} · {account.liveCodes} of {account.codeAllowance} permanent codes used
+            {account.email} · {PLANS[account.plan].label} plan · {account.liveCodes} of{" "}
+            {account.codeAllowance} permanent codes used
           </p>
         </div>
         <div class="dashboard__actions">
@@ -83,9 +79,6 @@ export function Dashboard() {
             onClick={() => void fetchExport().then(downloadJson)}
           >
             Export
-          </button>
-          <button type="button" class="btn btn-secondary" onClick={() => void logOut()}>
-            Sign out
           </button>
           <a class="btn btn-primary" href="/create">
             Create a code
@@ -158,7 +151,11 @@ export function Dashboard() {
               </tbody>
             </table>
           </div>
-          <AnalyticsPanel onUnauthorized={onUnauthorized} />
+          {account.features.analytics ? (
+            <AnalyticsPanel onUnauthorized={onUnauthorized} />
+          ) : (
+            <UpgradeCard totalScans={codes.reduce((sum, code) => sum + (code.scans ?? 0), 0)} />
+          )}
         </>
       )}
     </main>

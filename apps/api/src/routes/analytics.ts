@@ -1,5 +1,5 @@
 import { findUserCode, scanAnalytics } from "@stillscans/db";
-import { type AnalyticsResponse, analyticsQuerySchema } from "@stillscans/shared";
+import { type AnalyticsResponse, analyticsQuerySchema, PLANS } from "@stillscans/shared";
 import { Hono } from "hono";
 import type { AppEnv } from "../app";
 import { ApiError, notFound } from "../lib/errors";
@@ -23,6 +23,10 @@ export const analyticsRoutes = new Hono<AppEnv>();
 analyticsRoutes.use("*", requireUser);
 
 analyticsRoutes.get("/", async (c) => {
+  if (!PLANS[c.get("user").plan].analytics) {
+    throw new ApiError(403, "plan_required", "Full analytics is part of Pro.");
+  }
+
   const parsed = analyticsQuerySchema.safeParse(c.req.query());
   if (!parsed.success) throw new ApiError(400, "invalid_filters", "Those filters aren't valid.");
 

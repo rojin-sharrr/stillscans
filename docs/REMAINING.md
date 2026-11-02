@@ -11,9 +11,8 @@ Deliberately deferred. StillScans launches free, with Google sign-in only.
 ## After launch
 
 - **Payments.** Pro and Business show a waitlist for now. Count interest with `pnpm waitlist:count`.
-  Stripe Checkout or a merchant of record such as Lemon Squeezy or Paddle are both options. Analytics,
-  logos and the 100-code limit aren't gated yet. Paying should only raise `users.code_allowance`, so it
-  can never affect a printed code.
+  Stripe Checkout or a merchant of record such as Lemon Squeezy or Paddle are both options. A successful payment
+  should only set `users.plan` and `users.code_allowance`, so it can never affect a printed code.
 - **Comparison pages** for "[provider] alternative" searches.
 - **Dark mode** and **social share images** (1200×630).
 - **Duplicate a code** from the dashboard.

@@ -108,13 +108,20 @@ export function call(
   return app.fetch(request, env, ctx);
 }
 
-export async function seedUser(db: ReturnType<typeof sqlHelper>, id: string, allowance = 3) {
+export async function seedUser(
+  db: ReturnType<typeof sqlHelper>,
+  id: string,
+  allowance = 3,
+  plan = "pro",
+) {
   const now = Date.now();
   const token = `token-${id}`;
   await db.batch([
     db
-      .prepare("INSERT INTO users (id, email, code_allowance, created_at) VALUES (?, ?, ?, ?)")
-      .bind(id, `${id}@example.com`, allowance, now),
+      .prepare(
+        "INSERT INTO users (id, email, code_allowance, plan, created_at) VALUES (?, ?, ?, ?, ?)",
+      )
+      .bind(id, `${id}@example.com`, allowance, plan, now),
     db
       .prepare(
         "INSERT INTO sessions (token_hash, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)",

@@ -1,10 +1,10 @@
 ---
 import { Dashboard } from "../../components/Dashboard";
-import { SiteHeader } from "../../components/SiteHeader";
+import { AppHeader } from "../../components/AppHeader";
 import Base from "../../layouts/Base.astro";
 ---
 
-<Base title="Your codes · StillScans" noindex>
-  <SiteHeader client:load />
+<Base title="Your codes · StillScans" noindex requireSession>
+  <AppHeader client:only="preact" />
   <Dashboard client:only="preact" />
 </Base>

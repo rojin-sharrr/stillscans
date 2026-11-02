@@ -201,6 +201,14 @@ export interface ScanFilters {
  * Aggregates for one owner, scoped through `codes` so one account can never read
  * another's scans.
  */
+export async function countScans(db: Db, shortCode: string): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(scans)
+    .where(eq(scans.shortCode, shortCode));
+  return row?.count ?? 0;
+}
+
 export async function scanAnalytics(db: Db, filters: ScanFilters) {
   const { userId, since, codeId, device, country } = filters;
   const scoped = and(

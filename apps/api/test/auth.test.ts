@@ -6,7 +6,7 @@ let bindings: Awaited<ReturnType<typeof createTestBindings>>;
 let env: Env;
 const ORIGIN = { origin: "https://usestillscans.com" };
 
-const CLEAR = ["sessions", "code_destinations", "codes", "users"];
+const CLEAR = ["scans", "sessions", "code_destinations", "codes", "users"];
 
 beforeAll(async () => {
   bindings = await createTestBindings();
@@ -62,7 +62,13 @@ describe("sessions", () => {
     const fixture = withToken(good);
     const { cookie } = await signIn(fixture, env);
     const res = await call(fixture.app, env, "/api/auth/me", { headers: { cookie } });
-    expect(await res.json()).toEqual({ email: "g@example.com", codeAllowance: 5, liveCodes: 0 });
+    expect(await res.json()).toEqual({
+      email: "g@example.com",
+      codeAllowance: 5,
+      liveCodes: 0,
+      plan: "free",
+      features: { analytics: false, branding: false },
+    });
   });
 
   it("blocks cookie writes from another site", async () => {
@@ -192,6 +198,92 @@ describe("google sign-in", () => {
     );
     expect(res.headers.get("location")).toContain("/sign-in?error=google");
     expect(sessionCookie(res)).toBeUndefined();
+  });
+});
+
+describe("plans", () => {
+  const branded = {
+    foreground: "#123456",
+    background: "#FFFFFF",
+    modules: "square",
+    frame: "none",
+    callToAction: "",
+    logo: null,
+  };
+
+  it("keeps full analytics from free accounts", async () => {
+    const { app } = createTestApp();
+    const token = await seedUser(bindings.DB, "free-user", 5, "free");
+    const res = await call(app, env, "/api/analytics?days=30", { token });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ error: { code: "plan_required" } });
+  });
+
+  it("gives Pro accounts full analytics", async () => {
+    const { app } = createTestApp();
+    const token = await seedUser(bindings.DB, "pro-user", 100, "pro");
+    expect((await call(app, env, "/api/analytics?days=30", { token })).status).toBe(200);
+  });
+
+  it("refuses custom colors on the free plan, on create and edit", async () => {
+    const { app } = createTestApp();
+    const token = await seedUser(bindings.DB, "free-user", 5, "free");
+    const denied = await call(app, env, "/api/codes", {
+      method: "POST",
+      token,
+      json: { destination: "https://a.com/", design: branded },
+    });
+    expect(denied.status).toBe(403);
+    expect(await bindings.DB.prepare("SELECT id FROM codes").first()).toBeNull();
+
+    const made = await call(app, env, "/api/codes", {
+      method: "POST",
+      token,
+      json: { destination: "https://a.com/" },
+    });
+    const { code } = (await made.json()) as { code: { id: string } };
+    const patched = await call(app, env, `/api/codes/${code.id}`, {
+      method: "PATCH",
+      token,
+      json: { design: branded },
+    });
+    expect(patched.status).toBe(403);
+  });
+
+  it("lets free accounts use the plain design", async () => {
+    const { app } = createTestApp();
+    const token = await seedUser(bindings.DB, "free-user", 5, "free");
+    const res = await call(app, env, "/api/codes", {
+      method: "POST",
+      token,
+      json: { destination: "https://a.com/", design: { ...branded, foreground: "#0e1116" } },
+    });
+    expect(res.status).toBe(201);
+  });
+
+  it("still shows free accounts their total scans", async () => {
+    const { app } = createTestApp();
+    const token = await seedUser(bindings.DB, "free-user", 5, "free");
+    const made = await call(app, env, "/api/codes", {
+      method: "POST",
+      token,
+      json: { destination: "https://a.com/" },
+    });
+    const { code } = (await made.json()) as { code: { id: string; shortCode: string } };
+    await bindings.DB.prepare(
+      "INSERT INTO scans (id, short_code, scanned_at, device_type) VALUES ('s1', ?, 1, 'mobile')",
+    )
+      .bind(code.shortCode)
+      .run();
+
+    const list = (await (await call(app, env, "/api/codes", { token })).json()) as {
+      codes: { scans: number }[];
+    };
+    expect(list.codes[0]?.scans).toBe(1);
+    const detail = (await (await call(app, env, `/api/codes/${code.id}`, { token })).json()) as {
+      code: { scans: number };
+    };
+    expect(detail.code.scans).toBe(1);
   });
 });
 

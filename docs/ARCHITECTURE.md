@@ -85,6 +85,14 @@ Google is the only sign-in method. Sessions are 30-day HttpOnly cookies shared a
 - The callback URL comes from `API_ORIGIN`, because it must match the Google console exactly.
 - Cookie-authenticated writes must carry our exact `Origin`, which stops cross-site requests.
 
+## Plans
+
+`PLANS` in `packages/shared/src/plans.ts` is the one place that says what each plan unlocks. The API
+enforces it: free accounts get `plan_required` from `/api/analytics`, and for a logo or custom colors.
+The web app only reflects this. Plans never reach KV, so no plan can affect a printed code.
+
+No payment data is stored. Until payments exist, `pnpm plan:set <email> <plan> [env file]` sets a plan.
+
 ## Analytics
 
 A scan can't identify a person, and we don't try. `redirect` records time, place from Cloudflare

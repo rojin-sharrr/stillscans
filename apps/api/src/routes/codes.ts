@@ -1,6 +1,7 @@
 import {
   type Code,
   countLiveCodes,
+  countScans,
   findUserCode,
   insertCode,
   isUniqueViolation,
@@ -11,8 +12,11 @@ import {
 } from "@stillscans/db";
 import {
   createCodeSchema,
+  designNeedsBranding,
   generateShortCode,
   isReservedShortCode,
+  PLANS,
+  type Plan,
   type QrDesign,
   REDIRECT_HOST,
   updateCodeSchema,
@@ -64,6 +68,12 @@ async function vetDestination(input: string, threats: ThreatChecker): Promise<st
   return href;
 }
 
+function assertBranding(plan: Plan, design: QrDesign | undefined): void {
+  if (design && designNeedsBranding(design) && !PLANS[plan].branding) {
+    throw new ApiError(403, "plan_required", "Your logo and colors are part of Pro.");
+  }
+}
+
 function assertAllowance(live: number, allowance: number): void {
   if (live >= allowance) {
     throw new ApiError(403, "code_limit_reached", "You've used all your permanent codes.");
@@ -94,6 +104,7 @@ export function codeRoutes(threats: (env: Env) => ThreatChecker) {
 
     const db = c.get("db");
     const user = c.get("user");
+    assertBranding(user.plan, parsed.data.design);
     assertAllowance(await countLiveCodes(db, user.id), user.codeAllowance);
     const destination = await vetDestination(parsed.data.destination, threats(c.env));
 
@@ -124,9 +135,12 @@ export function codeRoutes(threats: (env: Env) => ThreatChecker) {
     const db = c.get("db");
     const code = await findUserCode(db, c.get("user").id, c.req.param("id"));
     if (!code) throw notFound();
-    const history = await listDestinations(db, code.id);
+    const [history, scans] = await Promise.all([
+      listDestinations(db, code.id),
+      countScans(db, code.shortCode),
+    ]);
     return c.json({
-      code: presentCode(code),
+      code: { ...presentCode(code), scans },
       destinations: history.map(({ destination, createdAt }) => ({ destination, createdAt })),
     });
   });
@@ -144,6 +158,7 @@ export function codeRoutes(threats: (env: Env) => ThreatChecker) {
     }
 
     const { destination, label, status, design } = parsed.data;
+    assertBranding(user.plan, design);
     if (code.status === "archived" && status === "active") {
       assertAllowance(await countLiveCodes(db, user.id), user.codeAllowance);
     }
