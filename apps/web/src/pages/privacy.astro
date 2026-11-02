@@ -1,0 +1,79 @@
+---
+import SiteFooter from "../components/SiteFooter.astro";
+import { SiteHeader } from "../components/SiteHeader";
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Privacy policy · StillScans" description="What StillScans collects from account holders and from people who scan a code, why, and how long we keep it.">
+  <SiteHeader client:load />
+  <main class="wrap page-main prose">
+    <h1 class="h1">Privacy policy</h1>
+    <p class="muted">This policy is from Simple Storage LLC, which runs StillScans. Effective November 2, 2026. Contact: <a href="mailto:r.sharma@millstreetlabs.com">r.sharma@millstreetlabs.com</a>, 234 West Willow St.</p>
+    <p>This policy covers two groups: people with a StillScans account, and people who scan a code made with StillScans. It also covers anyone using the free checker.</p>
+
+    <section>
+      <h2 class="h2">If you have an account</h2>
+      <ul>
+        <li><b>Your email address.</b> Google gives us this when you sign in. We use it to identify your account. We don't receive your Google password.</li>
+        <li><b>Your codes.</b> Each code's destination, name, design, status, and its past destinations.</li>
+        <li><b>A sign-in cookie.</b> It keeps you signed in for up to 30 days. We store only a scrambled version of it.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="h2">If you scan a code</h2>
+      <p>You don't need an account, and we don't try to identify you. When you scan a code made with StillScans, we record:</p>
+      <ul>
+        <li>The time, and which code was scanned</li>
+        <li>Approximate location: city, region and country</li>
+        <li>Device type and operating system</li>
+        <li>A one-way value made from your IP address, browser details, the date and the code, used to estimate distinct visitors</li>
+      </ul>
+      <p>We don't store your IP address with this data. The one-way value changes daily and differs for each code, which stops it being used to follow you across days or codes. The code's owner sees totals and approximate places and devices, and a list of recent scans showing place, device and time. They never see the one-way value.</p>
+      <p>Automated traffic that identifies itself as a bot, and link previews, are forwarded without being recorded.</p>
+    </section>
+
+    <section>
+      <h2 class="h2">If you use the checker</h2>
+      <p>Photos you upload are read in your browser and aren't sent to us. We receive the link or text inside the code and follow its redirects, and we keep the result so you can reopen it. Results are private behind a random link and are deleted after 30 days. If a code uses a redirect service we don't recognize, we keep a count of that domain, with no link to you.</p>
+    </section>
+
+    <section>
+      <h2 class="h2">If you contact us or join a waitlist</h2>
+      <p>If you send a report, we keep your message and, if you give one, your email address. If you join a waitlist, we keep your email address, the plan you chose and the page you signed up from, to tell you when it launches.</p>
+    </section>
+
+    <section>
+      <h2 class="h2">Cookies and browser storage</h2>
+      <p>We use a sign-in cookie, a short-lived cookie that protects Google sign-in, and storage in your browser that remembers your signed-in state, an unfinished code, and the small preview of a checked code. We don't use advertising cookies or third-party analytics.</p>
+    </section>
+
+    <section>
+      <h2 class="h2">Who else handles data</h2>
+      <ul>
+        <li><b>Cloudflare</b> hosts the site and forwards scans. It sees IP addresses to deliver requests and supplies the approximate location.</li>
+        <li><b>Neon</b> hosts our database.</li>
+        <li><b>Google</b> provides sign-in, and serves the fonts on this site, so your browser connects to Google when pages load.</li>
+      </ul>
+      <p>We don't sell personal data.</p>
+    </section>
+
+    <section>
+      <h2 class="h2">How long we keep data</h2>
+      <ul>
+        <li>Check results: 30 days</li>
+        <li>Sign-in sessions: 30 days</li>
+        <li>Accounts and codes: while your account is open, or until you ask us to delete them</li>
+        <li>Scan records: 24 months</li>
+        <li>Reports and waitlist emails: as long as we need them for that purpose, or until you ask us to delete them</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="h2">Your choices and rights</h2>
+      <p>You can export your codes from your dashboard at any time.</p>
+      <p>To see or delete your data, email <a href="mailto:r.sharma@millstreetlabs.com">r.sharma@millstreetlabs.com</a>. There's no self-serve deletion yet. If we delete your account, the short link itself stays reserved so it's never given to anyone else.</p>
+    </section>
+  </main>
+  <SiteFooter />
+</Base>

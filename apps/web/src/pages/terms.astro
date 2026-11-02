@@ -1,0 +1,59 @@
+---
+import SiteFooter from "../components/SiteFooter.astro";
+import { SiteHeader } from "../components/SiteHeader";
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Terms of service · StillScans" description="The terms for using StillScans, including what you can't use codes for and when we may disable a code.">
+  <SiteHeader client:load />
+  <main class="wrap page-main prose">
+    <h1 class="h1">Terms of service</h1>
+    <p class="muted">These terms are from Simple Storage LLC, which runs StillScans. Effective November 2, 2026. Contact: <a href="mailto:r.sharma@millstreetlabs.com">r.sharma@millstreetlabs.com</a>, 234 West Willow St.</p>
+    <p>By using StillScans you agree to these terms.</p>
+
+    <section>
+      <h2 class="h2">Your account</h2>
+      <p>You sign in with Google and are responsible for what happens under your account.</p>
+    </section>
+
+    <section>
+      <h2 class="h2">Your codes</h2>
+      <p>You're responsible for where your codes point. Free accounts include unlimited static codes and 5 permanent dynamic codes. Short links are never reassigned to anyone else.</p>
+    </section>
+
+    <section id="acceptable-use">
+      <h2 class="h2">Acceptable use</h2>
+      <p>You may not use StillScans to:</p>
+      <ul>
+        <li>Phish, or trick people into giving up passwords, payment details or personal information</li>
+        <li>Distribute malware, or link to sites that do</li>
+        <li>Impersonate a person, business or organization</li>
+        <li>Run scams or other fraud</li>
+        <li>Link to anything illegal, or that infringes someone else's rights</li>
+        <li>Send spam, or try to overload, probe or get around the limits of the service</li>
+      </ul>
+    </section>
+
+    <section id="disabling-codes">
+      <h2 class="h2">When we may disable a code</h2>
+      <p>We may stop any code, or suspend any account, that we reasonably believe breaks these rules or puts people at risk. We may do this without notice. Anyone scanning a stopped code sees a warning page rather than the destination, and its owner can't turn it back on.</p>
+      <p>If you think we've stopped a code by mistake, email <a href="mailto:r.sharma@millstreetlabs.com">r.sharma@millstreetlabs.com</a>.</p>
+    </section>
+
+    <section>
+      <h2 class="h2">If you stop paying</h2>
+      <p>Your codes keep working. Paying never decides whether a printed code forwards scans.</p>
+    </section>
+
+    <section>
+      <h2 class="h2">Payments and refunds</h2>
+      <p>Paid plans aren't on sale yet. When Pro launches, it will come with a 14-day refund. People on the waitlist will be offered the $19 founding price.</p>
+    </section>
+
+    <section>
+      <h2 class="h2">The checker and provider information</h2>
+      <p>The checker reports what it finds when it follows a link at that moment. The provider directory summarizes information from providers' own pages, which can change. Neither is a guarantee or advice. Report anything out of date, and we'll check it.</p>
+    </section>
+  </main>
+  <SiteFooter />
+</Base>

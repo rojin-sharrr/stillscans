@@ -16,7 +16,8 @@
     "setup:local": "./scripts/setup-local.sh",
     "db:generate": "pnpm --filter @stillscans/db exec drizzle-kit generate",
     "db:migrate": "./scripts/db-migrate.sh",
-    "db:migrate:url": "./scripts/db-migrate-url.sh"
+    "db:migrate:url": "./scripts/db-migrate-url.sh",
+    "waitlist:count": "./scripts/waitlist-count.sh"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.4",

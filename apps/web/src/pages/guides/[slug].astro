@@ -1,0 +1,75 @@
+---
+import { Checker } from "../../components/Checker";
+import { Faq } from "../../components/Faq";
+import SiteFooter from "../../components/SiteFooter.astro";
+import { SiteHeader } from "../../components/SiteHeader";
+import Base from "../../layouts/Base.astro";
+import { type Guide, guides } from "../../lib/guides";
+import { faqJsonLd } from "../../lib/provider-copy";
+
+export function getStaticPaths() {
+  return guides.map((guide) => ({ params: { slug: guide.slug }, props: { guide } }));
+}
+
+const { guide } = Astro.props as { guide: Guide };
+const related = guides.filter((other) => other.slug !== guide.slug);
+---
+
+<Base title={`${guide.title} · StillScans`} description={guide.description} jsonLd={faqJsonLd(guide.faqs)}>
+  <SiteHeader client:load />
+  <main class="wrap page-main">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="/guides">Guides</a><span aria-hidden="true">/</span><span aria-current="page">{guide.title}</span>
+    </nav>
+    <h1 class="h1 guide-title">{guide.title}</h1>
+    <p class="lead page-lead">{guide.intro}</p>
+
+    <div class="guide-layout">
+      <article class="guide-body prose">
+        {guide.sections.map((section) => (
+          <section id={section.id}>
+            <h2 class="h2">{section.title}</h2>
+            {section.body.map((paragraph) => <p>{paragraph}</p>)}
+            {section.list && <ul>{section.list.map((item) => <li>{item}</li>)}</ul>}
+          </section>
+        ))}
+
+        <section id="check">
+          <h2 class="h2">Check your code</h2>
+          <p>Scan it, upload a photo, or paste the link. We'll show where it goes and who controls it.</p>
+          <div class="card card-pad"><Checker client:visible compact idPrefix="guide" /></div>
+        </section>
+
+        <section id="questions">
+          <h2 class="h2">Questions</h2>
+          <Faq client:visible items={guide.faqs} />
+        </section>
+      </article>
+
+      <aside class="guide-aside only-wide">
+        <nav aria-label="On this page" class="toc">
+          <div class="toc__title">On this page</div>
+          {guide.sections.map((section) => <a href={`#${section.id}`}>{section.title}</a>)}
+          <a href="#check">Check your code</a>
+          <a href="#questions">Questions</a>
+        </nav>
+      </aside>
+    </div>
+
+    <section class="guide-cta card card-pad" aria-labelledby="guide-cta">
+      <div>
+        <h2 id="guide-cta" class="h3">Make a code that keeps working</h2>
+        <p class="body-15 muted pretty">No trial and no card. It keeps working whether or not you ever pay us.</p>
+      </div>
+      <a class="btn btn-primary" href="/create">Create a permanent code</a>
+    </section>
+
+    <section class="section-block" aria-labelledby="related">
+      <h2 id="related" class="h3">Related guides</h2>
+      <ul class="related">
+        {related.map((other) => <li><a class="card" href={`/guides/${other.slug}`}>{other.title}</a></li>)}
+      </ul>
+    </section>
+  </main>
+  <SiteFooter />
+</Base>

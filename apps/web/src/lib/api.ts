@@ -4,6 +4,7 @@ import type {
   CheckRequest,
   CheckResult,
   CreateReportInput,
+  JoinWaitlistInput,
   QrDesign,
 } from "@stillscans/shared";
 
@@ -62,6 +63,15 @@ export async function sendReport(report: CreateReportInput): Promise<void> {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(report),
+  });
+  if (!response.ok) throw await errorFrom(response);
+}
+
+export async function joinWaitlist(entry: JoinWaitlistInput): Promise<void> {
+  const response = await fetch(`${API_URL}/api/waitlist`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(entry),
   });
   if (!response.ok) throw await errorFrom(response);
 }

@@ -1,0 +1,28 @@
+---
+import SiteFooter from "../../components/SiteFooter.astro";
+import { SiteHeader } from "../../components/SiteHeader";
+import Base from "../../layouts/Base.astro";
+import { guides } from "../../lib/guides";
+---
+
+<Base
+  title="QR code guides · StillScans"
+  description="Plain-English guides to why QR codes stop working, whether they expire, static vs dynamic codes, and how to fix a code that won't scan."
+>
+  <SiteHeader client:load />
+  <main class="wrap page-main">
+    <h1 class="h1">QR code guides</h1>
+    <p class="lead page-lead">Plain answers for when a code stops working, or before you print one.</p>
+    <ul class="guide-list">
+      {guides.map((guide) => (
+        <li>
+          <a class="card guide-card" href={`/guides/${guide.slug}`}>
+            <h2 class="h3">{guide.title}</h2>
+            <p class="body-15 muted pretty">{guide.intro}</p>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </main>
+  <SiteFooter />
+</Base>

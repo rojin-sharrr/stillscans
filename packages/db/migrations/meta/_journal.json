@@ -15,6 +15,13 @@
       "when": 1793646397786,
       "tag": "0001_known_marvel_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793652650761,
+      "tag": "0002_far_kulan_gath",
+      "breakpoints": true
     }
   ]
 }

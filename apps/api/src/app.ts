@@ -13,6 +13,7 @@ import { authRoutes } from "./routes/auth";
 import { checkRoutes } from "./routes/check";
 import { codeRoutes } from "./routes/codes";
 import { reportRoutes } from "./routes/reports";
+import { waitlistRoutes } from "./routes/waitlist";
 
 export interface AppEnv {
   Bindings: Env;
@@ -84,6 +85,7 @@ export function createApp(deps: AppDeps = defaultDeps) {
   app.route("/api/check", checkRoutes(checkDeps));
   app.route("/api/codes", codeRoutes(deps.threats));
   app.route("/api/reports", reportRoutes);
+  app.route("/api/waitlist", waitlistRoutes);
 
   app.notFound((c) => c.json({ error: { code: "not_found", message: "Not found" } }, 404));
 

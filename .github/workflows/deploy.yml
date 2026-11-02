@@ -101,5 +101,8 @@ jobs:
         working-directory: apps/web
         env:
           PUBLIC_API_URL: https://api.usestillscans.com
+      # Pages with wording awaiting review are visibly marked, and must not go live.
+      - name: Refuse to publish unreviewed TODOs
+        run: "! grep -rl 'data-review-todo' apps/web/dist"
       - run: pnpm exec wrangler deploy --env=""
         working-directory: apps/web

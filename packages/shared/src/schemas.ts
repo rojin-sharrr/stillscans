@@ -69,6 +69,15 @@ export const createReportSchema = z
   })
   .strict();
 
+export const joinWaitlistSchema = z
+  .object({
+    email: z.email().max(254),
+    plan: z.enum(["pro", "business"]),
+    /** The page the person signed up from. */
+    source: z.string().trim().min(1).max(120).optional(),
+  })
+  .strict();
+
 export const ANALYTICS_RANGES = [7, 30, 90, 365] as const;
 
 export const analyticsQuerySchema = z.object({
@@ -89,3 +98,4 @@ export type CreateCodeInput = z.infer<typeof createCodeSchema>;
 export type UpdateCodeInput = z.infer<typeof updateCodeSchema>;
 export type CheckRequest = z.infer<typeof checkRequestSchema>;
 export type CreateReportInput = z.infer<typeof createReportSchema>;
+export type JoinWaitlistInput = z.infer<typeof joinWaitlistSchema>;

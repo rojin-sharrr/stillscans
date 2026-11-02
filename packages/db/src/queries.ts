@@ -333,6 +333,10 @@ export async function recordUnknownDomain(db: Db, domain: string, now: number): 
     });
 }
 
+export async function joinWaitlist(db: Db, entry: typeof schema.waitlist.$inferInsert) {
+  await db.insert(schema.waitlist).values(entry).onConflictDoNothing();
+}
+
 export async function insertReport(
   db: Db,
   report: typeof schema.providerReports.$inferInsert,

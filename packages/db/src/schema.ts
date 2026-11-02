@@ -5,8 +5,8 @@ import { bigint, index, integer, pgTable, primaryKey, text } from "drizzle-orm/p
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
-  /** Dynamic codes this account may hold. Free is 3; one-time packs raise it. */
-  codeAllowance: integer("code_allowance").notNull().default(3),
+  /** Dynamic codes this account may hold. Free is 5; Pro raises it to 100. */
+  codeAllowance: integer("code_allowance").notNull().default(5),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });
 
@@ -113,6 +113,18 @@ export const providerReports = pgTable("provider_reports", {
     .default("open"),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });
+
+/** People asking to hear when a paid plan opens. */
+export const waitlist = pgTable(
+  "waitlist",
+  {
+    email: text("email").notNull(),
+    plan: text("plan", { enum: ["pro", "business"] }).notNull(),
+    source: text("source"),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.email, t.plan] })],
+);
 
 /** Redirect domains seen by the checker but missing from the directory: the research queue. */
 export const unknownDomains = pgTable(

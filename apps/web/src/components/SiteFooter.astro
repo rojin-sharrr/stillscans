@@ -7,6 +7,10 @@ const guides = [
   ["Why a QR code stopped working", "/guides/why-qr-code-stopped-working"],
   ["QR code not scanning", "/guides/qr-code-not-scanning"],
 ];
+const legal = [
+  ["Privacy", "/privacy"],
+  ["Terms", "/terms"],
+];
 const product = [
   ["Check a QR code", "/"],
   ["QR code providers", "/providers"],
@@ -33,7 +37,10 @@ const product = [
       </nav>
     </div>
     <div class="site-footer__base">
-      <span>© 2026 StillScans</span>
+      <span class="site-footer__legal">
+        <span>© 2026 StillScans</span>
+        {legal.map(([label, href]) => <a href={href}>{label}</a>)}
+      </span>
       <span class="mono">usestillscans.com</span>
     </div>
   </div>

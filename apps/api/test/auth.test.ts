@@ -62,7 +62,7 @@ describe("sessions", () => {
     const fixture = withToken(good);
     const { cookie } = await signIn(fixture, env);
     const res = await call(fixture.app, env, "/api/auth/me", { headers: { cookie } });
-    expect(await res.json()).toEqual({ email: "g@example.com", codeAllowance: 3, liveCodes: 0 });
+    expect(await res.json()).toEqual({ email: "g@example.com", codeAllowance: 5, liveCodes: 0 });
   });
 
   it("blocks cookie writes from another site", async () => {

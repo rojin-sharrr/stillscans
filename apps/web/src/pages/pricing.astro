@@ -1,0 +1,105 @@
+---
+import { Faq } from "../components/Faq";
+import SiteFooter from "../components/SiteFooter.astro";
+import { SiteHeader } from "../components/SiteHeader";
+import { WaitlistForm } from "../components/WaitlistForm";
+import Base from "../layouts/Base.astro";
+import { faqJsonLd } from "../lib/provider-copy";
+
+const plans = {
+  free: [
+    "Unlimited static codes",
+    "5 permanent dynamic codes",
+    "Edit the destination anytime",
+    "Total scan count",
+    "PNG and SVG download",
+  ],
+  pro: [
+    "100 permanent dynamic codes",
+    "Full analytics: time, places, devices",
+    "Your logo and colors",
+    "CSV export",
+    "Priority support",
+  ],
+  business: ["Custom domain", "Bulk creation", "Team access", "API"],
+};
+
+const faqs = [
+  {
+    q: "Is Free really free forever?",
+    a: "Yes. Static codes are free and unlimited, and you get 5 permanent dynamic codes. There's no trial and no card.",
+  },
+  {
+    q: "What happens if StillScans shuts down?",
+    a: "Static codes keep working no matter what, because the link is printed inside them. You can export your dynamic codes and where they point anytime. Our trust page explains the plan.",
+  },
+  {
+    q: "What's the difference between static and dynamic?",
+    a: "A static code holds your link directly. It can't be edited and depends on no one. A dynamic code holds a short link that forwards each scan, so you can change where it points without reprinting.",
+  },
+  {
+    q: "Can I upgrade later?",
+    a: "Yes. When Pro launches, your codes will stay exactly as they are, and printed codes will keep working.",
+  },
+  {
+    q: "What's your refund policy?",
+    a: "Nothing is on sale yet. When Pro launches, it will come with a 14-day refund.",
+  },
+];
+---
+
+<Base
+  title="Pricing: free QR codes that keep working · StillScans"
+  description="Free forever: unlimited static codes and 5 permanent dynamic codes, with no card. If you stop paying, your codes keep working. Pro is coming soon."
+  jsonLd={faqJsonLd(faqs)}
+>
+  <SiteHeader client:load />
+  <main class="wrap page-main">
+    <h1 class="h1">Simple pricing. Codes that keep working.</h1>
+    <p class="lead page-lead">Start free, with no card. Pro and Business are coming soon.</p>
+
+    <div class="guarantee guarantee--top">
+      <div class="guarantee__text">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7FD6B1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /><path d="m9 12 2 2 4-4" /></svg>
+        <p>If you stop paying, your codes keep working. Pro is a one-time payment — your codes and analytics never expire.</p>
+      </div>
+      <span class="guarantee__note">Export all your codes anytime.</span>
+    </div>
+
+    <div class="plans">
+      <section class="card plan" aria-labelledby="plan-free">
+        <h2 id="plan-free" class="h3">Free</h2>
+        <div class="plan__price"><span class="plan__amount">$0</span> forever</div>
+        <ul class="plan__list">{plans.free.map((item) => <li>{item}</li>)}</ul>
+        <a class="btn btn-primary" href="/sign-in">Get started free</a>
+      </section>
+
+      <section class="card plan plan--featured" aria-labelledby="plan-pro">
+        <div class="plan__head">
+          <h2 id="plan-pro" class="h3">Pro</h2>
+          <span class="plan__tag">Coming soon</span>
+        </div>
+        <div class="plan__price"><span class="plan__amount">$29</span> one-time</div>
+        <p class="plan__note">Founding price $19 for people on the list. Pro is launching soon, so nothing is on sale yet.</p>
+        <ul class="plan__list">{plans.pro.map((item) => <li>{item}</li>)}</ul>
+        <WaitlistForm client:visible plan="pro" label="Notify me (lock in $19)" />
+      </section>
+
+      <section class="card plan" aria-labelledby="plan-business">
+        <div class="plan__head">
+          <h2 id="plan-business" class="h3">Business</h2>
+          <span class="plan__tag">Coming soon</span>
+        </div>
+        <div class="plan__price"><span class="plan__amount">~$9</span> /mo, billed yearly</div>
+        <ul class="plan__list">{plans.business.map((item) => <li>{item}</li>)}</ul>
+        <WaitlistForm client:visible plan="business" label="Notify me" />
+      </section>
+    </div>
+
+    <section class="section-block" aria-labelledby="pricing-faq">
+      <h2 id="pricing-faq" class="h2">Questions</h2>
+      <Faq client:visible items={faqs} />
+    </section>
+  </main>
+  <SiteFooter />
+</Base>

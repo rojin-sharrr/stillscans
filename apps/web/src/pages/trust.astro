@@ -1,0 +1,58 @@
+---
+import SiteFooter from "../components/SiteFooter.astro";
+import { SiteHeader } from "../components/SiteHeader";
+import Base from "../layouts/Base.astro";
+---
+
+<Base
+  title="Trust: what happens if you stop paying or we shut down · StillScans"
+  description="What happens to your QR codes if you stop paying or StillScans shuts down, how we fight abuse, and what we collect when someone scans a code."
+>
+  <SiteHeader client:load />
+  <main class="wrap page-main prose">
+    <h1 class="h1">Trust</h1>
+    <p class="lead">Plain answers to the questions that matter when your code is printed on something.</p>
+
+    <section id="stop-paying">
+      <h2 class="h2">What happens if you stop paying</h2>
+      <p>Your codes keep redirecting. Printed codes don't stop, because the service that forwards scans doesn't know whether anyone has paid.</p>
+      <p>StillScans is free today. When paid plans launch, you'd only lose editing and advanced analytics. Pro will be a one-time payment, so there will be nothing to stop paying for.</p>
+    </section>
+
+    <section id="shutdown">
+      <h2 class="h2">What happens if StillScans shuts down</h2>
+      <ul>
+        <li><b>Static codes keep working.</b> The link is printed inside the code, so they don't depend on us at all.</li>
+        <li><b>You can export anytime.</b> Your dashboard exports every code and where it points, so you always have your own copy.</li>
+        <li><b>You'd hear from us first.</b> We'd email you before any change that affects your codes.</li>
+        <li><b>We'll keep the redirects running.</b> Codes printed with <span class="mono">stillscans.net</span> need that domain to keep forwarding, and keeping it running is our commitment to you.</li>
+        <li><b>Custom domains give businesses more control.</b> With your own domain on the Business plan, which is coming soon, the printed link would belong to you.</li>
+      </ul>
+    </section>
+
+    <section id="abuse">
+      <h2 class="h2">How we fight abuse</h2>
+      <ul>
+        <li>Permanent codes need a verified Google account, and each account has a limit on how many it can hold.</li>
+        <li>We refuse destinations that aren't normal public web addresses.</li>
+        <li>We can stop a code. Anyone scanning it then sees a warning page rather than the destination, and a stopped code can't be turned back on by its owner.</li>
+        <li>A short link is never reassigned, so a printed code can't later open someone else's page.</li>
+      </ul>
+      <p>Found a code being misused? <a href="/report">Tell us about it</a> or email <a href="mailto:r.sharma@millstreetlabs.com">r.sharma@millstreetlabs.com</a>.</p>
+    </section>
+
+    <section id="scans">
+      <h2 class="h2">What we collect when someone scans a code</h2>
+      <p>A scan can't tell us who someone is, and we don't try to find out. For each scan we record:</p>
+      <ul>
+        <li>The time of the scan and which code was scanned</li>
+        <li>Approximate location: city, region and country</li>
+        <li>Device type and operating system, such as phone and iOS</li>
+        <li>A scrambled one-way value used to estimate how many different visitors a code had that day</li>
+      </ul>
+      <p>We don't store IP addresses with scans. An IP address is used briefly to work out approximate location and to create the scrambled value, which changes every day and is different for each code. It can't be turned back into an IP address by anyone who sees it.</p>
+      <p>Known bots and link previews are forwarded but not counted. Read our <a href="/privacy">privacy policy</a> for the full details.</p>
+    </section>
+  </main>
+  <SiteFooter />
+</Base>

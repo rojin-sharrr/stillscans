@@ -24,6 +24,7 @@ const CLEAR = [
   "users",
   "checks",
   "provider_reports",
+  "waitlist",
   "unknown_domains",
 ];
 
@@ -424,6 +425,32 @@ describe("reports", () => {
     expect(unknown.status).toBe(422);
     const empty = await call(app, env, "/api/reports", { method: "POST", json: { message: "" } });
     expect(empty.status).toBe(400);
+  });
+});
+
+describe("waitlist", () => {
+  it("stores one entry per email and plan, normalising case", async () => {
+    const { app } = createTestApp();
+    const json = { email: "A@Example.com", plan: "business", source: "/pricing" };
+    expect((await call(app, env, "/api/waitlist", { method: "POST", json })).status).toBe(201);
+    expect((await call(app, env, "/api/waitlist", { method: "POST", json })).status).toBe(201);
+    const { results } = await bindings.DB.prepare("SELECT email, plan, source FROM waitlist").all();
+    expect(results).toEqual([{ email: "a@example.com", plan: "business", source: "/pricing" }]);
+  });
+
+  it("rejects bad input and is rate limited", async () => {
+    const { app } = createTestApp();
+    const bad = await call(app, env, "/api/waitlist", {
+      method: "POST",
+      json: { email: "nope", plan: "pro" },
+    });
+    expect(bad.status).toBe(400);
+    vi.mocked(env.REPORT_LIMITER.limit).mockResolvedValueOnce({ success: false });
+    const limited = await call(app, env, "/api/waitlist", {
+      method: "POST",
+      json: { email: "a@example.com", plan: "pro" },
+    });
+    expect(limited.status).toBe(429);
   });
 });
 
